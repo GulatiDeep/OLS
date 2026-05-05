@@ -106,7 +106,7 @@
     #status-bar {
       font-size: 11px;
       height: 24px;
-      padding: 0 10px;
+      padding: 0 15px;
     }
 
     #layer-toggle-btn,
@@ -119,6 +119,48 @@
   #zoom-cycle-btn:hover {
     background: #00d4ff;
     transform: scale(1.08);
+  }
+
+  #compass {
+    position: absolute;
+    top: 80px;
+    right: 20px;
+    width: 70px;
+    height: 70px;
+    z-index: 110;
+  }
+
+  #compass-rose {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(20,20,20,0.9);
+    border: 1px solid rgba(255,255,255,0.2);
+    position: relative;
+    box-shadow: 0 0 10px rgba(0,0,0,0.6);
+  }
+
+  .dir {
+    position: absolute;
+    font-size: 10px;
+    color: #00d4ff;
+    font-weight: bold;
+  }
+
+  .dir.n { top: 4px; left: 50%; transform: translateX(-50%); }
+  .dir.s { bottom: 4px; left: 50%; transform: translateX(-50%); }
+  .dir.e { right: 4px; top: 50%; transform: translateY(-50%); }
+  .dir.w { left: 4px; top: 50%; transform: translateY(-50%); }
+
+  #compass-arrow {
+    position: absolute;
+    width: 2px;
+    height: 26px;
+    background: #00d4ff;
+    top: 10px;
+    left: 50%;
+    transform-origin: bottom center;
+    transform: translateX(-50%);
   }
 
   #zoom-value-text {
@@ -324,6 +366,16 @@
 
   <div id="zoom-cycle-btn" onclick="cycleVScale()" title="Toggle Vertical Scaling">
     <span id="zoom-value-text">4x</span>
+  </div>
+
+  <div id="compass">
+    <div id="compass-rose">
+      <div class="dir n">N</div>
+      <div class="dir e">E</div>
+      <div class="dir s">S</div>
+      <div class="dir w">W</div>
+      <div id="compass-arrow"></div>
+    </div>
   </div>
 
   <div id="layer-toggle-btn" onclick="toggleLayerUI()" title="Toggle Layers">
@@ -545,6 +597,8 @@
     document.body.appendChild(renderer.domElement);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+    const compassArrow = document.getElementById('compass-arrow');
     controls.enableDamping = true;
     controls.enableZoom = true;
     controls.enablePan = true;
@@ -563,13 +617,229 @@
     scene.add(olsGroup);
 
     function createBaseline() {
+      // --- Ground Plane (subtle) ---
+      const groundGeo = new THREE.PlaneGeometry(50000, 50000);
+      const groundMat = new THREE.MeshPhongMaterial({
+        color: 0x0a0a0a,
+        transparent: true,
+        opacity: 0.9,
+        side: THREE.DoubleSide
+      });
+      const ground = new THREE.Mesh(groundGeo, groundMat);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.y = 0;
+      scene.add(ground);
+
+      // --- Runway ---
       const rwyGeo = new THREE.PlaneGeometry(CONFIG.runway.length, CONFIG.runway.width);
-      const rwyMat = new THREE.MeshPhongMaterial({ color: 0x444444, side: THREE.DoubleSide });
+      const rwyMat = new THREE.MeshPhongMaterial({ color: 0x2f2f2f, side: THREE.DoubleSide });
       const rwy = new THREE.Mesh(rwyGeo, rwyMat);
       rwy.rotation.x = -Math.PI / 2;
-      rwy.position.y = 1; 
+      rwy.position.y = 1;
       scene.add(rwy);
 
+      // --- Runway Centerline (between threshold markings) ---
+      const centerlineMat = new THREE.LineBasicMaterial({ 
+        color: 0xffffff,
+        depthTest: false,
+        transparent: true,
+        opacity: 1
+      });
+      const centerPoints = [];
+      const dashLength = 30; // ICAO standard
+      const gapLength = 20;
+
+      // limit strictly between threshold inner edges
+      const stripeLength = 30;
+      const thresholdInner = (CONFIG.runway.length / 2) - 6 - stripeLength;
+      const usableStart = -thresholdInner;
+      const usableEnd = thresholdInner;
+
+      // --- Runway Numbers Position (needed before centerline exclusion logic) ---
+      const thresholdInnerNum = (CONFIG.runway.length / 2) - 6 - stripeLength;
+      const numberPos = thresholdInnerNum - 12;
+
+      // Exclude centerline dashes under runway numbers (both ends)
+      const exclusionHalf = 10; // buffer zone around runway numbers (~9m length + margin)
+      for (let i = usableStart; i < usableEnd; i += dashLength + gapLength) {
+        const mid = i + dashLength / 2;
+
+        // Number position (already 12m from threshold)
+        // Exclude dashes within ~10m of either number
+        const nearPosEnd = Math.abs(mid - numberPos) < exclusionHalf;
+        const nearNegEnd = Math.abs(mid + numberPos) < exclusionHalf;
+        if (nearPosEnd || nearNegEnd) continue;
+
+        centerPoints.push(new THREE.Vector3(i, 3, 0));
+        centerPoints.push(new THREE.Vector3(i + dashLength, 3, 0));
+      }
+
+      const centerGeo = new THREE.BufferGeometry().setFromPoints(centerPoints);
+      const centerLine = new THREE.LineSegments(centerGeo, centerlineMat);
+      scene.add(centerLine);
+      centerLine.renderOrder = 999;
+
+      // --- Runway Edge Rectangle (side strip markings as full boundary) ---
+      const edgeMat = new THREE.LineBasicMaterial({ 
+        color: 0xffffff,
+        depthTest: false,
+        transparent: true,
+        opacity: 1
+      });
+      const edgeOffset = CONFIG.runway.width / 2 - 1;
+      const halfLen = CONFIG.runway.length / 2;
+
+      const edgePoints = [
+        new THREE.Vector3(-halfLen, 3, -edgeOffset),
+        new THREE.Vector3(halfLen, 3, -edgeOffset),
+        new THREE.Vector3(halfLen, 3, edgeOffset),
+        new THREE.Vector3(-halfLen, 3, edgeOffset)
+      ];
+
+      const edgeGeo = new THREE.BufferGeometry().setFromPoints(edgePoints);
+      const edgeRect = new THREE.LineLoop(edgeGeo, edgeMat);
+      scene.add(edgeRect);
+      edgeRect.renderOrder = 999;
+
+      // --- Runway Numbers (Designators 09 / 27) ---
+      function createRunwayNumber(text, xPos, rotationZ = 0) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // transparent background
+
+        ctx.fillStyle = 'white';
+        ctx.font = 'bold 100px Arial'; // reduced font size for better proportion
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+        const texture = new THREE.CanvasTexture(canvas);
+        const mat = new THREE.MeshBasicMaterial({ 
+          map: texture, 
+          transparent: true,
+          depthWrite: false,
+          depthTest: false
+        });
+
+        // Numbers are ~9m tall (ICAO typical)
+        const geo = new THREE.PlaneGeometry(50, 50);
+        const mesh = new THREE.Mesh(geo, mat);
+
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.rotation.z = rotationZ - Math.PI / 2; // rotate 90° left for proper alignment
+        mesh.position.set(xPos, 4, 0);
+
+        scene.add(mesh);
+        mesh.renderOrder = 999;
+      }
+
+
+      createRunwayNumber('09', -numberPos, 0);
+      createRunwayNumber('27', numberPos, Math.PI);
+
+      // --- Threshold Markings (inside runway edges) ---
+      const thrMat = new THREE.MeshBasicMaterial({ 
+        color: 0xffffff,
+        transparent: true,
+        depthWrite: false,
+        depthTest: false
+      });
+      const stripeWidth = 1.8;
+      // reuse existing stripeLength
+      const stripeGap = 4;
+      const stripesCount = 6;
+
+      [1, -1].forEach(dir => {
+        // 6m inside from runway end (not threshold): subtract half stripe length for centering
+        const baseX = (CONFIG.runway.length / 2 - 6 - stripeLength / 2) * dir; // 6m inside from runway end
+
+        for (let i = 0; i < stripesCount; i++) {
+          const offset = (i - (stripesCount / 2 - 0.5)) * (stripeWidth + stripeGap);
+
+          const stripeGeo = new THREE.PlaneGeometry(stripeLength, stripeWidth);
+          const stripe = new THREE.Mesh(stripeGeo, thrMat);
+
+          stripe.rotation.x = -Math.PI / 2;
+          stripe.position.set(baseX, 3, offset);
+
+          scene.add(stripe);
+          stripe.renderOrder = 999;
+        }
+      });
+
+      // --- Touchdown Zone Markings (pairs at intervals) ---
+      // ICAO: 4 pairs at 150m, 300m, 450m, 600m from threshold (skip aiming point overlap)
+      const tdzMat = new THREE.MeshBasicMaterial({ 
+        color: 0xffffff,
+        transparent: true,
+        depthWrite: false,
+        depthTest: false
+      });
+      const tdzDistances = [150, 300, 450, 600];
+
+      [1, -1].forEach(dir => {
+        const aimX = (CONFIG.runway.length / 2 - 300) * dir;
+
+        tdzDistances.forEach(dist => {
+          const x = (CONFIG.runway.length / 2 - dist) * dir;
+
+          // skip if overlapping aiming point
+          if (Math.abs(x - aimX) < 40) return;
+
+          const offsets = [-18, -10, 10, 18];
+
+          offsets.forEach(z => {
+            const stripe = new THREE.Mesh(
+              new THREE.PlaneGeometry(22.5, 1.8),
+              tdzMat
+            );
+            stripe.rotation.x = -Math.PI / 2;
+            stripe.position.set(x, 3, z);
+            scene.add(stripe);
+            stripe.renderOrder = 999;
+          });
+        });
+      });
+
+      // --- Aiming Point Markings (1000 ft ≈ 300m from threshold) ---
+      const aimMat = new THREE.MeshBasicMaterial({ 
+        color: 0xffffff,
+        transparent: true,
+        depthWrite: false,
+        depthTest: false
+      });
+      const aimLength = 45;
+      const aimWidth = 6;
+      // aimOffset already defined above (distance from threshold)
+
+      [1, -1].forEach(dir => {
+        const x = (CONFIG.runway.length / 2 - 300) * dir;
+
+        // Left block
+        const left = new THREE.Mesh(
+          new THREE.PlaneGeometry(aimLength, aimWidth),
+          aimMat
+        );
+        left.rotation.x = -Math.PI / 2;
+        left.position.set(x, 3, -12);
+        scene.add(left);
+        left.renderOrder = 999;
+
+        // Right block
+        const right = new THREE.Mesh(
+          new THREE.PlaneGeometry(aimLength, aimWidth),
+          aimMat
+        );
+        right.rotation.x = -Math.PI / 2;
+        right.position.set(x, 3, 12);
+        scene.add(right);
+        right.renderOrder = 999;
+      });
+
+      // --- Strip ---
       const sLen = CONFIG.runway.length + (CONFIG.strip.extension * 2);
       const sGeo = new THREE.PlaneGeometry(sLen, CONFIG.strip.width);
       const sMat = new THREE.MeshPhongMaterial({ color: 0x1a331a, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
@@ -1801,6 +2071,10 @@ function rebuildSurfaces(skipFit = false) {
     function animate() {
       requestAnimationFrame(animate);
       if (controls.enabled) controls.update();
+      if (compassArrow && controls) {
+        const angle = controls.getAzimuthalAngle();
+        compassArrow.style.transform = `rotate(${-angle}rad)`;
+      }
       renderer.render(scene, camera);
     }
     animate();
@@ -1864,7 +2138,7 @@ function rebuildSurfaces(skipFit = false) {
   };
 
   // Close layer panel when clicking outside
-document.addEventListener('click', function(e) {
+document.addEventListener('pointerdown', function(e) {
   const panel = document.getElementById('layer-panel');
   const btn = document.getElementById('layer-toggle-btn');
 
