@@ -11,17 +11,19 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: #050505;
     color: #fff;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
 
   #layer-toggle-btn {
     position: absolute;
     top: 20px;
     left: 20px;
-    width: 42px;
-    height: 42px;
+    width: 52px;
+    height: 52px;
     background: rgba(40, 44, 52, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 8px;
@@ -32,6 +34,8 @@
     z-index: 110;
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
     transition: all 0.2s;
+    width: 52px;
+    height: 52px;
   }
 
   #layer-toggle-btn:hover {
@@ -60,8 +64,8 @@
     position: absolute;
     top: 20px;
     right: 20px;
-    width: 42px;
-    height: 42px;
+    width: 52px;
+    height: 52px;
     background: rgba(40, 44, 52, 0.9);
     border: 2px solid #00d4ff;
     border-radius: 50%;
@@ -73,6 +77,43 @@
     box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
     transition: all 0.2s;
     user-select: none;
+  }
+  /* Mobile Optimization */
+  @media (max-width: 768px) {
+
+    #main-title {
+      font-size: 14px;
+      top: 10px;
+      padding: 0 10px;
+    }
+
+    #layer-panel {
+      width: calc(100% - 20px);
+      left: 10px;
+      top: 70px;
+      max-height: 70vh;
+    }
+
+    .toggle-row {
+      font-size: 15px;
+      padding: 10px;
+    }
+
+    .opacity-slider {
+      height: 8px;
+    }
+
+    #status-bar {
+      font-size: 11px;
+      height: 24px;
+      padding: 0 10px;
+    }
+
+    #layer-toggle-btn,
+    #zoom-cycle-btn {
+      width: 50px;
+      height: 50px;
+    }
   }
 
   #zoom-cycle-btn:hover {
@@ -479,9 +520,12 @@
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000000);
     camera.position.set(0, 40000, 20000);
     
+    const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+
     const renderer = new THREE.WebGLRenderer({ 
-      antialias: true,
-      logarithmicDepthBuffer: true
+      antialias: !isMobile,
+      logarithmicDepthBuffer: true,
+      powerPreference: "high-performance"
     });
     // --- Helper to reduce z-fighting (flickering) globally ---
     function applyDepthFix(root) {
@@ -497,11 +541,15 @@
       });
     }
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(isMobile ? 1 : window.devicePixelRatio);
     document.body.appendChild(renderer.domElement);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
+    controls.enableZoom = true;
+    controls.enablePan = true;
+    controls.rotateSpeed = isMobile ? 0.6 : 1;
+    controls.zoomSpeed = isMobile ? 0.8 : 1.2;
     controls.target.set(0, 0, 0);
     controls.update();
 
@@ -510,7 +558,6 @@
     dl.position.set(5000, 10000, 5000);
     scene.add(dl);
 
-    scene.add(new THREE.GridHelper(60000, 60, 0x222222, 0x111111));
 
     const olsGroup = new THREE.Group();
     scene.add(olsGroup);
@@ -1433,7 +1480,7 @@
 
     let OLS_REFS = {};
 
-    function rebuildSurfaces() {
+function rebuildSurfaces(skipFit = false) {
       while(olsGroup.children.length > 0){ olsGroup.remove(olsGroup.children[0]); }
       
       OLS_REFS.ihs = generateIHS(currentVScale);
@@ -1473,7 +1520,7 @@
       applyDepthFix(olsGroup);
       applyAllOpacities();
       updateOLSVisibility();
-      autoFitCamera();
+      if (!skipFit) autoFitCamera();
     }
 
     function animateCamera(targetPosition, targetLookAt) {
@@ -1574,7 +1621,7 @@
     window.cycleVScale = () => {
       currentVScale++; if (currentVScale > 10) currentVScale = 1;
       document.getElementById('zoom-value-text').innerText = currentVScale + 'x';
-      rebuildSurfaces();
+      rebuildSurfaces(true);
     };
 
     window.updateOLSVisibility = () => {
@@ -1742,8 +1789,20 @@
     createBaseline();
     rebuildSurfaces();
     autoFitCamera();
-    window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
-    function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }, 150);
+    });
+    function animate() {
+      requestAnimationFrame(animate);
+      if (controls.enabled) controls.update();
+      renderer.render(scene, camera);
+    }
     animate();
   </script>
   <script>
@@ -1819,7 +1878,8 @@ document.addEventListener('click', function(e) {
 });
   </script>
   <div id="status-bar">
-    © Made by Deep Gulati  </div>
+    © Made by Deep Gulati
+  </div>
 </body>
 </html>
 
