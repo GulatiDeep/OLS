@@ -1,1776 +1,1826 @@
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ICAO Annex 14 OLS Explorer</title>
+  <title>ICAO Annex-14 OLS Surface Visualiser</title>
   <style>
-    html,
-    body {
-      margin: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-    }
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #050505;
+    color: #fff;
+  }
 
-    #ui {
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      width: 320px;
-      background: rgba(20, 20, 20, 0.88);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 12px;
-      padding: 14px;
-      z-index: 10;
-      backdrop-filter: blur(8px);
-    }
+  #layer-toggle-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 42px;
+    height: 42px;
+    background: rgba(40, 44, 52, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 110;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    transition: all 0.2s;
+  }
 
-    #ui h2 {
-      margin: 0 0 10px 0;
-      font-size: 18px;
-    }
+  #layer-toggle-btn:hover {
+    background: rgba(60, 64, 72, 0.9);
+    border-color: #00d4ff;
+  }
 
-    #ui p {
-      margin: 0 0 10px 0;
-      font-size: 13px;
-      line-height: 1.45;
-      color: #ddd;
-    }
+  #layer-panel {
+    position: absolute;
+    top: 75px;
+    left: 20px;
+    width: 280px;
+    background: rgba(15, 15, 15, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 15px;
+    z-index: 105;
+    backdrop-filter: blur(10px);
+    display: none;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: slideIn 0.2s ease-out;
+  }
 
-    .section {
-      margin-top: 14px;
-      padding-top: 10px;
-      border-top: 1px solid rgba(255, 255, 255, 0.12);
-    }
+  #zoom-cycle-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 42px;
+    height: 42px;
+    background: rgba(40, 44, 52, 0.9);
+    border: 2px solid #00d4ff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 110;
+    box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
+    transition: all 0.2s;
+    user-select: none;
+  }
 
-    label {
-      display: block;
-      margin: 8px 0;
-      cursor: pointer;
-      font-size: 14px;
-    }
+  #zoom-cycle-btn:hover {
+    background: #00d4ff;
+    transform: scale(1.08);
+  }
 
-    select {
-      width: 100%;
-      margin-top: 6px;
-      padding: 8px;
-      border-radius: 8px;
-      border: none;
-      background: #222;
-      color: white;
-    }
+  #zoom-value-text {
+    font-size: 13px;
+    font-weight: 800;
+    color: #fff;
+  }
 
-    #legend {
-      margin-top: 10px;
-      font-size: 12px;
-      color: #ccc;
-    }
+  #zoom-cycle-btn:hover #zoom-value-text {
+    color: #000;
+  }
 
-    canvas {
-      display: block;
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
     }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  h2 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #00d4ff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .layer-group {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 14px;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #eee;
+    margin-bottom: 8px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 6px;
+    padding: 6px 8px;
+    transition: background 0.2s;
+  }
+
+  .toggle-row:hover {
+    background: rgba(0,212,255,0.08);
+  }
+
+  .toggle-row label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    flex-grow: 1;
+    font-weight: 500;
+  }
+
+  .toggle-row span {
+    font-weight: bold;
+    font-size: 14px;
+    color: #00d4ff;
+  }
+
+  .toggle-row input[type="checkbox"] {
+    margin-right: 10px;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+  }
+
+  /* Color-coded checkboxes (acts as legend) */
+  #chkIHS { accent-color: #00ffff; }
+  #chkConical { accent-color: #ffa500; }
+  #chkOHS { accent-color: #9933ff; }
+
+  #chkAppr1, #chkAppr2 { accent-color: #00ff00; }          /* neon green */
+  #chkTakeOff1, #chkTakeOff2 { accent-color: #ff00ff; }    /* magenta */
+  #chkTrans09, #chkTrans27 { accent-color: #0077ff; }      /* deep blue */
+
+  #chkInnerAppr1, #chkInnerAppr2 { accent-color: #00ffff; } /* cyan */
+  #chkBLS1, #chkBLS2 { accent-color: #ff0000; }            /* red */
+  #chkITS1, #chkITS2 { accent-color: #ffff00; }            /* bright yellow */
+
+  /* Group checkboxes (neutral color) */
+  #chkCommon, #chkRwy09, #chkRwy27, #chkOFZ09, #chkOFZ27 {
+    accent-color: #00d4ff;
+  }
+
+  .opacity-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,0,0,0.25);
+    padding: 6px 8px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+
+  .opacity-slider {
+    flex-grow: 1;
+    height: 5px;
+    border-radius: 2px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: linear-gradient(90deg, #00d4ff, #0077ff);
+    outline: none;
+    cursor: pointer;
+  }
+
+  .opacity-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #00d4ff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .opacity-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: #00d4ff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .opacity-value {
+    color: #00d4ff;
+    font-weight: bold;
+    font-size: 12px;
+    width: 35px;
+    text-align: right;
+    font-family: monospace;
+  }
+
+  .section-header {
+    font-weight: bold;
+    font-size: 11px;
+    color: #00d4ff;
+    margin-bottom: 8px;
+    display: block;
+    letter-spacing: 0.5px;
+  }
+
+  h2 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    color: #00d4ff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(0,212,255,0.2);
+    padding-bottom: 6px;
+  }
+
+
+  /* Center Heading */
+  #main-title {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 20px;
+    font-weight: bold;
+    color: #00d4ff;
+    letter-spacing: 1px;
+    text-align: center;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  /* Status Bar */
+  #status-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 28px;
+    background: rgba(20, 20, 20, 0.95);
+    border-top: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 15px;
+    font-size: 12px;
+    color: #aaa;
+    z-index: 100;
+    box-sizing: border-box;
+    overflow: hidden;
+    white-space: nowrap;
+  }
   </style>
 </head>
-
 <body>
-  <div id="ui">
-    <h2>ICAO Annex-14 OLS Explorer</h2>
-    <p>
-      Educational 3D visualization of obstacle limitation surfaces from
-      ICAO Annex-14 Volume-I Chapter-4.
-    </p>
-    <div class="section">
-      <label>
-        Airfield Template</label>
+  <div id="main-title">ICAO Annex-14 OLS Surface Visualiser</div>
 
-    </div>
-    <div class="section">
-      <strong>Display Surfaces</strong><label><input type="checkbox" id="chkApproach" checked> Approach Surface</label>
-      <label><input type="checkbox" id="chkTakeoff" checked> Take-off Climb Surface</label>
-      <label><input type="checkbox" id="chkTransitional" checked> Transitional Surface</label>
-      <label><input type="checkbox" id="chkInnerHorizontal" checked> Inner Horizontal Surface</label>
-      <label><input type="checkbox" id="chkConical" checked> Conical Surface</label>
-      <label><input type="checkbox" id="chkOuterHorizontal" checked> Outer Horizontal Surface</label>
-      <label><input type="checkbox" id="chkIAS" checked> Inner Approach Surface</label>
-      <label><input type="checkbox" id="chkITS" checked> Inner Transitional Surface</label>
-      <label><input type="checkbox" id="chkBLS" checked> Balked Landing Surface</label>
-      <label><input type="checkbox" id="chkLabels" checked> Show Labels and Dimensions</label>
-
-    </div>
-
+  <div id="zoom-cycle-btn" onclick="cycleVScale()" title="Toggle Vertical Scaling">
+    <span id="zoom-value-text">4x</span>
   </div>
-  <script type="importmap">
-{
-  "imports": {
-    "three": "https://esm.sh/three@0.160.1"
-  }
-}
-</script>
-  <script type="module">
-    import * as THREE from 'three';
-    import { OrbitControls } from 'https://esm.sh/three@0.160.1/examples/jsm/controls/OrbitControls.js';
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a0a);
 
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 50000);
-    camera.position.set(2500, 1800, 2500);
+  <div id="layer-toggle-btn" onclick="toggleLayerUI()" title="Toggle Layers">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M12,16L19.36,10.27L21,9L12,2L3,9L4.63,10.27M12,18.54L4.62,12.81L3,14.07L12,21.07L21,14.07L19.37,12.81L12,18.54Z" /></svg>
+  </div>
+  
+  <div id="layer-panel">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px;">
+      <h2 style="margin:0;">OLS Layers</h2>
+      <button onclick="resetAllControls()" style="background:#00d4ff; color:#000; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:bold; white-space:nowrap;">
+        Reset
+      </button>
+    </div>
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+    <!-- COMMON SURFACES -->
+    <div class="layer-group">
+      <div class="toggle-row" onclick="toggleSectionWithIcon('commonGroup', this.querySelector('span'), event)">
+        <label style="cursor:pointer;">
+          <input type="checkbox" id="chkCommon" checked onchange="toggleCommonGroup()"> Common Surfaces
+        </label>
+        <span style="cursor:pointer; margin-left:auto;">+</span>
+      </div>
 
-    const controls = new OrbitControls(camera, renderer.domElement);
+      <div id="commonGroup" style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
+        <div class="toggle-row"><label><input type="checkbox" id="chkIHS" checked onchange="updateOLSVisibility()"> Inner Horizontal Surface</label></div>
+        <div class="opacity-container">
+          <input type="range" id="opIHS" class="opacity-slider" min="0" max="100" value="20" oninput="updateOpacity('IHS')">
+          <span id="valIHS" class="opacity-value">20%</span>
+        </div>
 
-    const axesScene = new THREE.Scene();
-    const axesCamera = new THREE.PerspectiveCamera(50, 1, 1, 1000);
-    axesCamera.up = camera.up;
+        <div class="toggle-row"><label><input type="checkbox" id="chkConical" checked onchange="updateOLSVisibility()"> Conical Surface</label></div>
+        <div class="opacity-container">
+          <input type="range" id="opConical" class="opacity-slider" min="0" max="100" value="40" oninput="updateOpacity('Conical')">
+          <span id="valConical" class="opacity-value">40%</span>
+        </div>
 
-    const axesHelper = new THREE.AxesHelper(200);
-    axesScene.add(axesHelper);
+        <div class="toggle-row"><label><input type="checkbox" id="chkOHS" checked onchange="updateOLSVisibility()"> Outer Horizontal Surface</label></div>
+        <div class="opacity-container">
+          <input type="range" id="opOHS" class="opacity-slider" min="0" max="100" value="20" oninput="updateOpacity('OHS')">
+          <span id="valOHS" class="opacity-value">20%</span>
+        </div>
+      </div>
+    </div>
 
-    controls.enableDamping = true;
-    controls.target.set(0, 50, 0);
-    controls.maxPolarAngle = Math.PI / 2 - 0.02;
-    controls.minPolarAngle = 0.05;
+    <!-- RUNWAY 09 -->
+      <div class="layer-group">
+        <div class="toggle-row" onclick="toggleSectionWithIcon('rwy09Group', this.querySelector('span'), event)">
+          <label style="cursor:pointer;">
+            <input type="checkbox" id="chkRwy09" checked onchange="toggleRunwayGroup('09')"> Runway 09
+          </label>
+          <span style="cursor:pointer; margin-left:auto;">+</span>
+        </div>
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+      <div id="rwy09Group" style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
+        
+        <div class="toggle-row"><label><input type="checkbox" id="chkAppr1" checked onchange="updateOLSVisibility()"> Approach Surface</label></div>
+        <div class="opacity-container">
+          <input type="range" id="opAppr" class="opacity-slider" min="0" max="100" value="40" oninput="updateOpacity('Appr')">
+          <span id="valAppr" class="opacity-value">40%</span>
+        </div>
 
-    const sun = new THREE.DirectionalLight(0xffffff, 1.2);
-    sun.position.set(3000, 4000, 1500);
-    scene.add(sun);
+        <div class="toggle-row"><label><input type="checkbox" id="chkTakeOff1" checked onchange="updateOLSVisibility()"> Take-off Surface</label></div>
+        <div class="opacity-container">
+          <input type="range" id="opTakeOff" class="opacity-slider" min="0" max="100" value="60" oninput="updateOpacity('TakeOff')">
+          <span id="valTakeOff" class="opacity-value">60%</span>
+        </div>
 
+        <div class="toggle-row"><label><input type="checkbox" id="chkTrans09" checked onchange="updateOLSVisibility()"> Transitional Surface</label></div>
+        <div class="opacity-container">
+          <input type="range" id="opTrans" class="opacity-slider" min="0" max="100" value="80" oninput="updateOpacity('Trans')">
+          <span id="valTrans" class="opacity-value">80%</span>
+        </div>
 
-    const runwayGroup = new THREE.Group();
-    const olsGroup = new THREE.Group();
-    const labelGroup = new THREE.Group();
-    scene.add(runwayGroup);
-    scene.add(olsGroup);
-    scene.add(labelGroup);
+        <!-- OFZ -->
+        <div class="toggle-row" onclick="toggleSectionWithIcon('ofz09', this.querySelector('span'), event)">
+          <label>
+            <input type="checkbox" id="chkOFZ09" checked onchange="toggleOFZGroup('09')"> OFZ
+          </label>
+          <span style="cursor:pointer; margin-left:auto;">+</span>
+        </div>
 
-    const ofzGroup = new THREE.Group();
-    scene.add(ofzGroup);
+        <div id="ofz09" style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
+          <div class="toggle-row"><label><input type="checkbox" id="chkInnerAppr1" checked onchange="updateOLSVisibility()"> Inner Approach Surface</label></div>
+          <div class="opacity-container">
+            <input type="range" id="opInnerAppr" class="opacity-slider" min="0" max="100" value="40" oninput="updateOpacity('InnerAppr')">
+            <span id="valInnerAppr" class="opacity-value">40%</span>
+          </div>
 
-    const OLS = {
-      runway: {
-        length: 2700,
-        width: 45,
-        half: 1350,
-        stripHalfWidth: 140,
-        stripEnd: 1410
+          <div class="toggle-row"><label><input type="checkbox" id="chkBLS1" checked onchange="updateOLSVisibility()"> Balked Landing Surface</label></div>
+          <div class="opacity-container">
+            <input type="range" id="opBLS" class="opacity-slider" min="0" max="100" value="60" oninput="updateOpacity('BLS')">
+            <span id="valBLS" class="opacity-value">60%</span>
+          </div>
+
+          <div class="toggle-row"><label><input type="checkbox" id="chkITS1" checked onchange="updateOLSVisibility()"> Inner Transitional Surface</label></div>
+          <div class="opacity-container">
+            <input type="range" id="opITS" class="opacity-slider" min="0" max="100" value="60" oninput="updateOpacity('ITS')">
+            <span id="valITS" class="opacity-value">60%</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RUNWAY 27 -->
+      <div class="layer-group">
+        <div class="toggle-row" onclick="toggleSectionWithIcon('rwy27Group', this.querySelector('span'), event)">
+          <label style="cursor:pointer;">
+            <input type="checkbox" id="chkRwy27" checked onchange="toggleRunwayGroup('27')"> Runway 27
+          </label>
+          <span style="cursor:pointer; margin-left:auto;">+</span>
+        </div>
+
+      <div id="rwy27Group" style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
+        
+        <div class="toggle-row"><label><input type="checkbox" id="chkAppr2" checked onchange="updateOLSVisibility()"> Approach Surface</label></div>
+        <div class="opacity-container">
+          <input type="range" id="opAppr2" class="opacity-slider" min="0" max="100" value="40" oninput="updateOpacity('Appr2')">
+          <span id="valAppr2" class="opacity-value">40%</span>
+        </div>
+
+        <div class="toggle-row"><label><input type="checkbox" id="chkTakeOff2" checked onchange="updateOLSVisibility()"> Take-off Surface</label></div>
+        <div class="opacity-container">
+          <input type="range" id="opTakeOff2" class="opacity-slider" min="0" max="100" value="60" oninput="updateOpacity('TakeOff2')">
+          <span id="valTakeOff2" class="opacity-value">60%</span>
+        </div>
+
+        <div class="toggle-row"><label><input type="checkbox" id="chkTrans27" checked onchange="updateOLSVisibility()"> Transitional Surface</label></div>
+        <div class="opacity-container">
+          <input type="range" id="opTrans27" class="opacity-slider" min="0" max="100" value="80" oninput="updateOpacity('Trans27')">
+          <span id="valTrans27" class="opacity-value">80%</span>
+        </div>
+
+        <!-- OFZ -->
+        <div class="toggle-row" onclick="toggleSectionWithIcon('ofz27', this.querySelector('span'), event)">
+          <label>
+            <input type="checkbox" id="chkOFZ27" checked onchange="toggleOFZGroup('27')"> OFZ
+          </label>
+          <span style="cursor:pointer; margin-left:auto;">+</span>
+        </div>
+
+        <div id="ofz27" style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
+          <div class="toggle-row"><label><input type="checkbox" id="chkInnerAppr2" checked onchange="updateOLSVisibility()"> Inner Approach Surface</label></div>
+          <div class="opacity-container">
+            <input type="range" id="opInnerAppr2" class="opacity-slider" min="0" max="100" value="40" oninput="updateOpacity('InnerAppr2')">
+            <span id="valInnerAppr2" class="opacity-value">40%</span>
+          </div>
+
+          <div class="toggle-row"><label><input type="checkbox" id="chkBLS2" checked onchange="updateOLSVisibility()"> Balked Landing Surface</label></div>
+          <div class="opacity-container">
+            <input type="range" id="opBLS2" class="opacity-slider" min="0" max="100" value="60" oninput="updateOpacity('BLS2')">
+            <span id="valBLS2" class="opacity-value">60%</span>
+          </div>
+
+          <div class="toggle-row"><label><input type="checkbox" id="chkITS2" checked onchange="updateOLSVisibility()"> Inner Transitional Surface</label></div>
+          <div class="opacity-container">
+            <input type="range" id="opITS2" class="opacity-slider" min="0" max="100" value="60" oninput="updateOpacity('ITS2')">
+            <span id="valITS2" class="opacity-value">60%</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+    const CONFIG = {
+      runway: { length: 3000, width: 45 },
+      strip: { width: 280, extension: 60 },
+      ihs: { radius: 4000, height: 45, opacity: 0.25 },
+      conical: { slope: 0.05, extension: 2100, startHeight: 45, endHeight: 150, opacity: 0.35 }, 
+      ohs: { radius: 15000, height: 150, opacity: 0.15 },
+      transitional: { slope: 0.143, opacity: 0.5 },
+      innerTransitional: { slope: 0.143, maxHeight: 45, opacity: 0.55 },
+      takeoff: { innerEdge: 180, distFromEnd: 60, divergence: 0.125, slope: 0.02, length: 15000, finalWidthLimit: 1800, opacity: 0.4 },
+      approach: { 
+          innerEdge: 280, distFromThreshold: 60, divergence: 0.15, 
+          seg1Len: 3000, seg1Slope: 0.02, seg2Len: 3600, seg2Slope: 0.025, seg3Len: 8400, seg3Slope: 0.0, 
+          opacity: 0.3 
       },
-
-      approach: {
-        offset: -1350 - 60,
-        divergence: 0.15,
-        firstLength: 3000,
-        firstSlope: 0.02,
-        secondLength: 3600,
-        secondSlope: 0.025,
-        horizontalLength: 8400,
-        innerEdge: 280
-      },
-
-      transitional: {
-        slope: 0.1433,
-        ihsHeight: 45
-      }
+      innerApproach: { innerEdge: 120, distFromThreshold: 60, length: 900, slope: 0.02, opacity: 0.6 },
+      // Balked Landing: Starts 1800m after threshold. Ends at IHS (45m high).
+      // Slope 3.33% = 1:30. Length to reach 45m = 45 * 30 = 1350m.
+      balkedLanding: { innerEdge: 120, distFromThreshold: 1800, length: 1350, slope: 0.0333, divergence: 0.10, opacity: 0.6 }
     };
 
-    function createRunway() {
-      // runwayGroup.clear();
+    let currentVScale = 4;
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050505);
 
-      const group = new THREE.Group();
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000000);
+    camera.position.set(0, 40000, 20000);
+    
+    const renderer = new THREE.WebGLRenderer({ 
+      antialias: true,
+      logarithmicDepthBuffer: true
+    });
+    // --- Helper to reduce z-fighting (flickering) globally ---
+    function applyDepthFix(root) {
+      root.traverse(obj => {
+        if (obj.isMesh && obj.material) {
+          const mat = obj.material;
+          mat.depthWrite = false;
+          mat.polygonOffset = true;
+          mat.polygonOffsetFactor = 1;
+          mat.polygonOffsetUnits = 1;
+          obj.renderOrder = 1;
+        }
+      });
+    }
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
 
-      const L = OLS.runway.length;
-      const W = OLS.runway.width;
-      const half = OLS.runway.half;
-      const stripHalf = OLS.runway.stripHalfWidth;
-      const stripEnd = OLS.runway.stripEnd;
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.target.set(0, 0, 0);
+    controls.update();
 
-      // =============================
-      // RUNWAY SURFACE
-      // =============================
-      const runway = new THREE.Mesh(
-        new THREE.BoxGeometry(L, 2, W),
-        new THREE.MeshPhongMaterial({ color: 0x1a1a1a })
-      );
-      runway.position.y = 1;
-      group.add(runway);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const dl = new THREE.DirectionalLight(0xffffff, 0.5);
+    dl.position.set(5000, 10000, 5000);
+    scene.add(dl);
 
-      // =============================
-      // CENTRELINE (dashed)
-      // =============================
-      for (let x = -half + 60; x < half; x += 80) {
-        const dash = new THREE.Mesh(
-          new THREE.BoxGeometry(30, 1, 1.5),
-          new THREE.MeshBasicMaterial({ color: 0xffffff })
-        );
-        dash.position.set(x, 2.2, 0);
-        group.add(dash);
+    scene.add(new THREE.GridHelper(60000, 60, 0x222222, 0x111111));
+
+    const olsGroup = new THREE.Group();
+    scene.add(olsGroup);
+
+    function createBaseline() {
+      const rwyGeo = new THREE.PlaneGeometry(CONFIG.runway.length, CONFIG.runway.width);
+      const rwyMat = new THREE.MeshPhongMaterial({ color: 0x444444, side: THREE.DoubleSide });
+      const rwy = new THREE.Mesh(rwyGeo, rwyMat);
+      rwy.rotation.x = -Math.PI / 2;
+      rwy.position.y = 1; 
+      scene.add(rwy);
+
+      const sLen = CONFIG.runway.length + (CONFIG.strip.extension * 2);
+      const sGeo = new THREE.PlaneGeometry(sLen, CONFIG.strip.width);
+      const sMat = new THREE.MeshPhongMaterial({ color: 0x1a331a, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+      const sMesh = new THREE.Mesh(sGeo, sMat);
+      sMesh.rotation.x = -Math.PI / 2;
+      sMesh.position.y = 0.5;
+      scene.add(sMesh);
+    }
+
+    function createVolumetricSkeleton(ptsTop, color) {
+        const group = new THREE.Group();
+        const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.8 });
+        
+        const topGeo = new THREE.BufferGeometry().setFromPoints(ptsTop);
+        group.add(new THREE.LineLoop(topGeo, mat));
+        
+        const ptsBot = ptsTop.map(p => new THREE.Vector3(p.x, 0, p.z));
+        const botGeo = new THREE.BufferGeometry().setFromPoints(ptsBot);
+        group.add(new THREE.LineLoop(botGeo, mat));
+        
+        ptsTop.forEach((p, i) => {
+            const ribGeo = new THREE.BufferGeometry().setFromPoints([p, ptsBot[i]]);
+            group.add(new THREE.Line(ribGeo, mat));
+        });
+        
+        return group;
+    }
+
+    function createPerimeterLines(points, height, color) {
+        const material = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.8 });
+        const geometry = new THREE.BufferGeometry().setFromPoints(points.map(p => new THREE.Vector3(p.x, height, p.y)));
+        return new THREE.LineLoop(geometry, material);
+    }
+
+    function createWallsForShape(points, bottomY, topY, color, opacity) {
+      const geometry = new THREE.BufferGeometry();
+      const vertices = [];
+      points.forEach((p, i) => {
+        const nextP = points[(i + 1) % points.length];
+        vertices.push(p.x, bottomY, p.y); vertices.push(p.x, topY, p.y); vertices.push(nextP.x, bottomY, nextP.y);
+        vertices.push(p.x, topY, p.y); vertices.push(nextP.x, topY, nextP.y); vertices.push(nextP.x, bottomY, nextP.y);
+      });
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      geometry.computeVertexNormals();
+      return new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color, transparent: true, opacity, side: THREE.DoubleSide }));
+    }
+
+    function generateIHS(vScale) {
+      const radius = CONFIG.ihs.radius;
+      const rHalf = CONFIG.runway.length / 2;
+      const segments = 128;
+      const scaledHeight = CONFIG.ihs.height * vScale;
+      const shape = new THREE.Shape();
+      shape.absarc(rHalf, 0, radius, -Math.PI / 2, Math.PI / 2, false);
+      shape.absarc(-rHalf, 0, radius, Math.PI / 2, -Math.PI / 2, false);
+      shape.closePath();
+      const mesh = new THREE.Mesh(new THREE.ShapeGeometry(shape, segments), new THREE.MeshPhongMaterial({ color: 0x00ffff, transparent: true, opacity: CONFIG.ihs.opacity, side: THREE.DoubleSide }));
+      mesh.rotation.x = -Math.PI / 2; mesh.position.y = scaledHeight;
+      olsGroup.add(mesh);
+      const points = shape.getPoints(segments);
+      const walls = createWallsForShape(points, 0, scaledHeight, 0x00ffff, CONFIG.ihs.opacity);
+      olsGroup.add(walls);
+      const lines = new THREE.Group();
+      lines.add(createPerimeterLines(points, scaledHeight, 0x00ffff));
+      lines.add(createPerimeterLines(points, 0, 0x00ffff));
+      olsGroup.add(lines);
+      return { mesh, walls, lines };
+    }
+
+    function generateConical(vScale) {
+      const rInner = CONFIG.ihs.radius; const rOuter = rInner + CONFIG.conical.extension;
+      const rHalf = CONFIG.runway.length / 2; const segments = 128;
+      const sHeight = CONFIG.conical.startHeight * vScale; const eHeight = CONFIG.conical.endHeight * vScale;
+      const geometry = new THREE.BufferGeometry(); const vertices = []; const indices = [];
+      const outerPoints = []; const innerPoints = [];
+      for (let i = 0; i <= segments; i++) {
+        const theta = (i / segments) * Math.PI * 2; const cos = Math.cos(theta); const sin = Math.sin(theta);
+        const xOff = (cos >= 0) ? rHalf : -rHalf;
+        vertices.push(xOff + rInner * cos, sHeight, rInner * sin);
+        vertices.push(xOff + rOuter * cos, eHeight, rOuter * sin);
+        if (i < segments) {
+            innerPoints.push({ x: xOff + rInner * cos, y: rInner * sin });
+            outerPoints.push({ x: xOff + rOuter * cos, y: rOuter * sin });
+        }
+      }
+      for (let i = 0; i < segments; i++) {
+        const v0 = i * 2, v1 = i * 2 + 1, v2 = (i + 1) * 2, v3 = (i + 1) * 2 + 1;
+        indices.push(v0, v1, v2, v1, v3, v2);
+      }
+      geometry.setIndex(indices); geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geometry.computeVertexNormals();
+      const mesh = new THREE.Mesh(geometry, new THREE.MeshPhongMaterial({ color: 0xffa500, transparent: true, opacity: CONFIG.conical.opacity, side: THREE.DoubleSide }));
+      olsGroup.add(mesh);
+      const walls = createWallsForShape(outerPoints, 0, eHeight, 0xffa500, CONFIG.conical.opacity);
+      const innerWalls = createWallsForShape(innerPoints, 0, sHeight, 0xffa500, CONFIG.conical.opacity);
+      olsGroup.add(walls, innerWalls);
+      const lines = new THREE.Group();
+      lines.add(createPerimeterLines(innerPoints, sHeight, 0xffa500), createPerimeterLines(outerPoints, eHeight, 0xffa500));
+      olsGroup.add(lines);
+      return { mesh, walls, innerWalls, lines };
+    }
+
+    function generateOHS(vScale) {
+      const radius = CONFIG.ohs.radius; const scaledHeight = CONFIG.ohs.height * vScale;
+      const mesh = new THREE.Mesh(new THREE.CircleGeometry(radius, 128), new THREE.MeshPhongMaterial({ color: 0x9933ff, transparent: true, opacity: CONFIG.ohs.opacity, side: THREE.DoubleSide }));
+      mesh.rotation.x = -Math.PI / 2; mesh.position.y = scaledHeight;
+      olsGroup.add(mesh);
+      const wallPoints = []; const segments = 128;
+      for(let i=0; i<segments; i++){
+        const theta = (i / segments) * Math.PI * 2;
+        wallPoints.push({ x: Math.cos(theta) * radius, y: Math.sin(theta) * radius });
+      }
+      const walls = createWallsForShape(wallPoints, 0, scaledHeight, 0x9933ff, CONFIG.ohs.opacity);
+      olsGroup.add(walls);
+      const lines = new THREE.Group();
+      lines.add(createPerimeterLines(wallPoints, scaledHeight, 0x9933ff), createPerimeterLines(wallPoints, 0, 0x9933ff));
+      olsGroup.add(lines);
+      return { mesh, walls, lines };
+    }
+
+    function generateTransitional(vScale) {
+        const rHalf = CONFIG.runway.length / 2; const sHalfLen = rHalf + CONFIG.strip.extension;
+        const sHalfWid = CONFIG.strip.width / 2; const ihsHeight = CONFIG.ihs.height * vScale;
+        const slope = CONFIG.transitional.slope; const transitionWidth = CONFIG.ihs.height / slope;
+        const addQuad = (v1, v2, v3, v4, arr) => {
+            arr.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v4.x, v4.y, v4.z);
+            arr.push(v2.x, v2.y, v2.z, v3.x, v3.y, v3.z, v4.x, v4.y, v4.z);
+        };
+        const createSurfaceGroup = (vertices, wallVertices) => {
+            const grp = new THREE.Group();
+            const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geo.computeVertexNormals();
+            grp.add(new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: 0x0077ff, transparent: true, opacity: CONFIG.transitional.opacity, side: THREE.DoubleSide })));
+            const wallGeo = new THREE.BufferGeometry(); wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3)); wallGeo.computeVertexNormals();
+            grp.add(new THREE.Mesh(wallGeo, new THREE.MeshPhongMaterial({ color: 0x0077ff, transparent: true, opacity: CONFIG.transitional.opacity * 0.7, side: THREE.DoubleSide })));
+            grp.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0x0077ff, transparent: true, opacity: 0.6 })));
+            return grp;
+        };
+        const centralVerts = []; const centralWalls = [];
+        [1, -1].forEach(side => {
+            const h1 = { x: -sHalfLen, y: 0, z: sHalfWid * side }; const h2 = { x: sHalfLen, y: 0, z: sHalfWid * side };
+            const o1 = { x: -sHalfLen, y: ihsHeight, z: (sHalfWid + transitionWidth) * side }; const o2 = { x: sHalfLen, y: ihsHeight, z: (sHalfWid + transitionWidth) * side };
+            addQuad(h1, h2, o2, o1, centralVerts);
+            const o1G = { ...o1, y: 0 }; const o2G = { ...o2, y: 0 }; addQuad(o1, o2, o2G, o1G, centralWalls);
+        });
+        const gCentral = createSurfaceGroup(centralVerts, centralWalls); olsGroup.add(gCentral);
+        const generateEndTrans = (dir) => {
+            const verts = []; const walls = [];
+            [1, -1].forEach(side => {
+                const appStartX = (rHalf + CONFIG.approach.distFromThreshold) * dir;
+                const ha = { x: appStartX, y: 0, z: (CONFIG.approach.innerEdge/2) * side };
+                const oa = { x: appStartX, y: ihsHeight, z: (CONFIG.approach.innerEdge/2 + transitionWidth) * side };
+                const distToIHS = CONFIG.ihs.height / CONFIG.approach.seg1Slope;
+                const hbX = appStartX + (distToIHS * dir); const hbW = (CONFIG.approach.innerEdge/2) + (distToIHS * CONFIG.approach.divergence);
+                const hb = { x: hbX, y: ihsHeight, z: hbW * side };
+                verts.push(ha.x, ha.y, ha.z, hb.x, hb.y, hb.z, oa.x, oa.y, oa.z);
+                const oaG = { ...oa, y: 0 }; const hbG = { ...hb, y: 0 }; addQuad(oa, hb, hbG, oaG, walls);
+                walls.push(ha.x, ha.y, ha.z, hb.x, hb.y, hb.z, hb.x, 0, hb.z);
+                const hStripEnd = { x: sHalfLen * dir, y: 0, z: sHalfWid * side };
+                const oStripEnd = { x: sHalfLen * dir, y: ihsHeight, z: (sHalfWid + transitionWidth) * side };
+                addQuad(hStripEnd, ha, oa, oStripEnd, verts);
+                const oStripEndG = { ...oStripEnd, y: 0 }; addQuad(oStripEnd, oa, oaG, oStripEndG, walls);
+            });
+            return createSurfaceGroup(verts, walls);
+        };
+        const g09 = generateEndTrans(1); const g27 = generateEndTrans(-1);
+        olsGroup.add(g09, g27);
+        return { gCentral, g09, g27 };
+    }
+
+    function createSingleTakeOff(side, vScale) {
+      const rHalf = CONFIG.runway.length / 2;
+      const cfg = CONFIG.takeoff;
+      const dir = -side;
+      const startX = (rHalf + cfg.distFromEnd) * dir;
+      const distLimit = (cfg.finalWidthLimit - cfg.innerEdge) / (2 * cfg.divergence);
+      
+      const p1 = new THREE.Vector3(startX, 0, -cfg.innerEdge/2); 
+      const p2 = new THREE.Vector3(startX, 0, cfg.innerEdge/2);  
+
+      let pts = [];
+      if (distLimit < cfg.length) {
+        const tX = startX + (distLimit * dir);
+        const tW = cfg.finalWidthLimit;
+        const tH = (distLimit * cfg.slope) * vScale;
+        const eX = startX + (cfg.length * dir);
+        const eH = (cfg.length * cfg.slope) * vScale;
+        pts = [
+            p1, p2, 
+            new THREE.Vector3(tX, tH, tW/2),
+            new THREE.Vector3(eX, eH, tW/2),
+            new THREE.Vector3(eX, eH, -tW/2),
+            new THREE.Vector3(tX, tH, -tW/2)
+        ];
+      } else {
+        const eX = startX + (cfg.length * dir);
+        const eW = cfg.innerEdge + (2 * cfg.length * cfg.divergence);
+        const eH = (cfg.length * cfg.slope) * vScale;
+        pts = [
+            p1, p2,
+            new THREE.Vector3(eX, eH, eW/2),
+            new THREE.Vector3(eX, eH, -eW/2)
+        ];
       }
 
-      // =============================
-      // RUNWAY EDGE MARKINGS (ENHANCED)
-      // =============================
-      const edgeOffset = W / 2 - 1;
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      if(pts.length === 6) geo.setIndex([0, 1, 5, 1, 2, 5, 2, 4, 5, 2, 3, 4]);
+      else geo.setIndex([0, 1, 2, 0, 2, 3]);
+      geo.computeVertexNormals();
 
-      const edgeMaterial = new THREE.MeshBasicMaterial({
-        color: 0xffffff
+      const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: 0xff1493, transparent: true, opacity: cfg.opacity, side: THREE.DoubleSide }));
+      const wallVertices = [];
+      pts.forEach((p, i) => {
+        const next = pts[(i+1)%pts.length];
+        wallVertices.push(p.x, 0, p.z, p.x, p.y, p.z, next.x, 0, next.z);
+        wallVertices.push(p.x, p.y, p.z, next.x, next.y, next.z, next.x, 0, next.z);
       });
+      const wallGeo = new THREE.BufferGeometry(); wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3)); wallGeo.computeVertexNormals();
+      const wallMesh = new THREE.Mesh(wallGeo, new THREE.MeshPhongMaterial({ color: 0xff1493, transparent: true, opacity: cfg.opacity * 0.7, side: THREE.DoubleSide }));
+      const line = createVolumetricSkeleton(pts, 0xff1493);
+      return { mesh, wallMesh, line };
+    }
 
-      // thicker + slightly raised
-      const leftEdge = new THREE.Mesh(
-        new THREE.BoxGeometry(L, 1.2, 2.5),
-        edgeMaterial
-      );
-      leftEdge.position.set(0, 2.4, -edgeOffset);
-      group.add(leftEdge);
+    function createSingleApproach(side, vScale) {
+      const cfg = CONFIG.approach; const rHalf = CONFIG.runway.length / 2;
+      const startX = (rHalf + cfg.distFromThreshold) * side;
+      const h0 = 0; const w0 = cfg.innerEdge;
+      const h1 = (cfg.seg1Len * cfg.seg1Slope) * vScale; const w1 = w0 + (2 * cfg.seg1Len * cfg.divergence); const x1 = startX + (cfg.seg1Len * side);
+      const h2 = h1 + (cfg.seg2Len * cfg.seg2Slope) * vScale; const w2 = w1 + (2 * cfg.seg2Len * cfg.divergence); const x2 = x1 + (cfg.seg2Len * side);
+      const h3 = h2; const w3 = w2 + (2 * cfg.seg3Len * cfg.divergence); const x3 = x2 + (cfg.seg3Len * side);
+      
+      const pts = [
+        new THREE.Vector3(startX, h0, -w0/2), new THREE.Vector3(startX, h0, w0/2),
+        new THREE.Vector3(x1, h1, w1/2), new THREE.Vector3(x2, h2, w2/2),
+        new THREE.Vector3(x3, h3, w3/2), new THREE.Vector3(x3, h3, -w3/2),
+        new THREE.Vector3(x2, h2, -w2/2), new THREE.Vector3(x1, h1, -w1/2)
+      ];
 
-      const rightEdge = new THREE.Mesh(
-        new THREE.BoxGeometry(L, 1.2, 2.5),
-        edgeMaterial
-      );
-      rightEdge.position.set(0, 2.4, edgeOffset);
-      group.add(rightEdge);
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      geo.setIndex([0, 1, 7, 1, 2, 7, 2, 6, 7, 2, 3, 6, 3, 5, 6, 3, 4, 5]); geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: 0x32cd32, transparent: true, opacity: cfg.opacity, side: THREE.DoubleSide }));
+      
+      const wallVertices = [];
+      pts.forEach((p, i) => {
+        const next = pts[(i+1)%pts.length];
+        wallVertices.push(p.x, 0, p.z, p.x, p.y, p.z, next.x, 0, next.z);
+        wallVertices.push(p.x, p.y, p.z, next.x, next.y, next.z, next.x, 0, next.z);
+      });
+      const wallGeo = new THREE.BufferGeometry(); wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3)); wallGeo.computeVertexNormals();
+      const wallMesh = new THREE.Mesh(wallGeo, new THREE.MeshPhongMaterial({ color: 0x32cd32, transparent: true, opacity: cfg.opacity * 0.7, side: THREE.DoubleSide }));
+      
+      const lineGroup = createVolumetricSkeleton(pts, 0x32cd32);
+      
+      const delineatorMat = new THREE.LineBasicMaterial({ color: 0x32cd32, transparent: true, opacity: 0.9, linewidth: 2 });
+      const l1Geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x1, h1, -w1/2), new THREE.Vector3(x1, h1, w1/2)]);
+      lineGroup.add(new THREE.Line(l1Geo, delineatorMat));
+      const l2Geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x2, h2, -w2/2), new THREE.Vector3(x2, h2, w2/2)]);
+      lineGroup.add(new THREE.Line(l2Geo, delineatorMat));
+      
+      return { mesh, wallMesh, line: lineGroup };
+    }
 
-      // end connectors (rectangle)
-      const frontEdge = new THREE.Mesh(
-        new THREE.BoxGeometry(2.5, 1.2, W - 2),
-        edgeMaterial
-      );
-      frontEdge.position.set(-half, 2.4, 0);
-      group.add(frontEdge);
+    function createSingleInnerApproach(side, vScale) {
+        const cfg = CONFIG.innerApproach; const rHalf = CONFIG.runway.length / 2;
+        const startX = (rHalf + cfg.distFromThreshold) * side; const endX = startX + (cfg.length * side); const endHeight = (cfg.length * cfg.slope) * vScale;
+        const pts = [new THREE.Vector3(startX, 0, -cfg.innerEdge/2), new THREE.Vector3(startX, 0, cfg.innerEdge/2), new THREE.Vector3(endX, endHeight, cfg.innerEdge/2), new THREE.Vector3(endX, endHeight, -cfg.innerEdge/2)];
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        geo.setIndex([0, 1, 2, 0, 2, 3]); geo.computeVertexNormals();
+        const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: 0x00ffff, transparent: true, opacity: cfg.opacity, side: THREE.DoubleSide }));
+        const wallVertices = [];
+        pts.forEach((p, i) => {
+            const next = pts[(i+1)%pts.length];
+            wallVertices.push(p.x, 0, p.z, p.x, p.y, p.z, next.x, 0, next.z);
+            wallVertices.push(p.x, p.y, p.z, next.x, next.y, next.z, next.x, 0, next.z);
+        });
+        const wallGeo = new THREE.BufferGeometry(); wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3)); wallGeo.computeVertexNormals();
+        const wallMesh = new THREE.Mesh(wallGeo, new THREE.MeshPhongMaterial({ color: 0x00ffff, transparent: true, opacity: cfg.opacity * 0.7, side: THREE.DoubleSide }));
+        const line = createVolumetricSkeleton(pts, 0x00ffff);
+        return { mesh, wallMesh, line };
+    }
 
-      const rearEdge = new THREE.Mesh(
-        new THREE.BoxGeometry(2.5, 1.2, W - 2),
-        edgeMaterial
-      );
-      rearEdge.position.set(half, 2.4, 0);
-      group.add(rearEdge);
+    function createSingleBalkedLanding(side, vScale) {
+        const cfg = CONFIG.balkedLanding; 
+        const rHalf = CONFIG.runway.length / 2;
+        // The BLS starts at a distance from the landing threshold (side * rHalf) 
+        // and extends INTO the climb-out direction (opposite of approach).
+        const startX = (rHalf - cfg.distFromThreshold) * side; 
+        const endX = startX - (cfg.length * side); 
+        const endHeight = (cfg.length * cfg.slope) * vScale;
+        const endWidth = cfg.innerEdge + (2 * cfg.length * cfg.divergence);
 
-      // =============================
-      // THRESHOLD MARKINGS (3 + 3)
-      // =============================
-      const thresholdX1 = -half + 40;
-      const thresholdX2 = half - 40;
+        const pts = [
+            new THREE.Vector3(startX, 0, -cfg.innerEdge/2),
+            new THREE.Vector3(startX, 0, cfg.innerEdge/2),
+            new THREE.Vector3(endX, endHeight, endWidth/2),
+            new THREE.Vector3(endX, endHeight, -endWidth/2)
+        ];
 
-      const stripeZ = [-12, -8, -4, 4, 8, 12];
+        const geo = new THREE.BufferGeometry().setFromPoints(pts);
+        geo.setIndex([0, 1, 2, 0, 2, 3]); geo.computeVertexNormals();
+        const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: 0xff4500, transparent: true, opacity: cfg.opacity, side: THREE.DoubleSide }));
+        
+        const wallVertices = [];
+        pts.forEach((p, i) => {
+            const next = pts[(i+1)%pts.length];
+            wallVertices.push(p.x, 0, p.z, p.x, p.y, p.z, next.x, 0, next.z);
+            wallVertices.push(p.x, p.y, p.z, next.x, next.y, next.z, next.x, 0, next.z);
+        });
+        const wallGeo = new THREE.BufferGeometry(); wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3)); wallGeo.computeVertexNormals();
+        const wallMesh = new THREE.Mesh(wallGeo, new THREE.MeshPhongMaterial({ color: 0xff4500, transparent: true, opacity: cfg.opacity * 0.7, side: THREE.DoubleSide }));
+        const line = createVolumetricSkeleton(pts, 0xff4500);
+        
+        return { mesh, wallMesh, line };
+    }
 
-      for (let x of [thresholdX1, thresholdX2]) {
-        stripeZ.forEach(z => {
-          const bar = new THREE.Mesh(
-            new THREE.BoxGeometry(35, 1, 3),
-            new THREE.MeshBasicMaterial({ color: 0xffffff })
-          );
-          bar.position.set(x, 2.2, z);
-          group.add(bar);
+
+    function createITSForRunway(vScale) {
+        const cfg = CONFIG.innerTransitional;
+        const rHalf = CONFIG.runway.length / 2;
+        const ia = CONFIG.innerApproach;
+
+        // IAS limits (approach side)
+        const iaStartX = rHalf + ia.distFromThreshold;        // inner end of IAS
+        const iaEndX = iaStartX + ia.length;                  // outer end of IAS
+
+        // BLS limits (towards runway side)
+        const blsStartX = rHalf - CONFIG.balkedLanding.distFromThreshold; // BLS start (at 0 height)
+        const blsEndX = blsStartX - CONFIG.balkedLanding.length;          // where BLS reaches ~45m
+
+        // Overall ITS span: from BLS far end → IAS far end
+        const startX = blsEndX;
+        const endX = iaEndX;
+
+        const edge = ia.innerEdge / 2;
+        // Inner edge follows IAS on approach side and BLS on runway side
+        const getInnerEdgeHalf = (x) => {
+            // BLS region (inner edge expands with divergence)
+            if (x <= blsStartX) {
+                // distance from BLS start towards BLS end
+                const dist = Math.max(0, blsStartX - x);
+                return (CONFIG.balkedLanding.innerEdge / 2) + (dist * CONFIG.balkedLanding.divergence);
+            }
+            // Flat region between BLS start and IAS start
+            if (x < iaStartX) {
+                return ia.innerEdge / 2;
+            }
+            // IAS region (constant inner edge)
+            return ia.innerEdge / 2;
+        };
+        const topHeight = cfg.maxHeight * vScale;             // 45m IHS
+
+        const vertices = [];
+
+        const addQuad = (v1, v2, v3, v4) => {
+            vertices.push(
+                v1.x, v1.y, v1.z,
+                v2.x, v2.y, v2.z,
+                v4.x, v4.y, v4.z
+            );
+            vertices.push(
+                v2.x, v2.y, v2.z,
+                v3.x, v3.y, v3.z,
+                v4.x, v4.y, v4.z
+            );
+        };
+
+        const slopeITS = 0.3333;
+        const runAt = (baseHeightScaled) => {
+            const baseHeightTrue = baseHeightScaled / vScale; // remove scaling effect
+            return (cfg.maxHeight - baseHeightTrue) / slopeITS;
+        };
+
+        // Height along ITS span
+        const getHeight = (x) => {
+            // Region 1: Beyond BLS (constant top region start)
+            if (x <= blsEndX) return CONFIG.balkedLanding.length * CONFIG.balkedLanding.slope * vScale;
+
+            // Region 2: BLS zone
+            if (x <= blsStartX) {
+                const dist = blsStartX - x;
+                return dist * CONFIG.balkedLanding.slope * vScale;
+            }
+
+            // Region 3: Flat (between BLS start and IAS start)
+            if (x < iaStartX) return 0;
+
+            // Region 4: IAS zone
+            const dist = x - iaStartX;
+            return Math.min(dist, ia.length) * ia.slope * vScale;
+        };
+        const getOuter = (x, baseH, innerE) => {
+            if (x > blsStartX && x < iaStartX) {
+                return innerE + runAt(0);
+            }
+            return innerE + runAt(baseH);
+        };
+
+        const buildSide = (side) => {
+
+            // Key longitudinal points
+            const xBLSend = startX;
+            const xBLSstart = blsStartX;
+            const xIASstart = iaStartX;
+            const xIASend = endX;
+
+            const xs = [xBLSend, xBLSstart, xIASstart, xIASend];
+
+            for (let i = 0; i < xs.length - 1; i++) {
+
+                const x1 = xs[i];
+                const x2 = xs[i + 1];
+
+                const h1y = getHeight(x1);
+                const h2y = getHeight(x2);
+
+                const e1 = getInnerEdgeHalf(x1);
+                const e2 = getInnerEdgeHalf(x2);
+
+                const h1 = { x: x1, y: h1y, z: e1 * side };
+                const h2 = { x: x2, y: h2y, z: e2 * side };
+
+                const o1 = { x: x1, y: topHeight, z: getOuter(x1, h1y, e1) * side };
+                const o2 = { x: x2, y: topHeight, z: getOuter(x2, h2y, e2) * side };
+
+                addQuad(h1, h2, o2, o1);
+            }
+        };
+
+        buildSide(1);
+        buildSide(-1);
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geo.computeVertexNormals();
+
+        const mesh = new THREE.Mesh(
+            geo,
+            new THREE.MeshPhongMaterial({
+                color: 0xffff00,
+                transparent: true,
+                opacity: cfg.opacity,
+                side: THREE.DoubleSide
+            })
+        );
+
+        // --- Add vertical walls along outer edges using the same xs points ---
+        const wallVertices = [];
+
+        const pushWall = (p1, p2) => {
+            wallVertices.push(
+                p1.x, 0, p1.z,
+                p1.x, p1.y, p1.z,
+                p2.x, 0, p2.z,
+
+                p1.x, p1.y, p1.z,
+                p2.x, p2.y, p2.z,
+                p2.x, 0, p2.z
+            );
+        };
+
+        // use xs array for 4 sections
+        const xs = [startX, blsStartX, iaStartX, endX];
+        for (let i = 0; i < xs.length - 1; i++) {
+            const x1 = xs[i];
+            const x2 = xs[i + 1];
+
+            const h1y = getHeight(x1);
+            const h2y = getHeight(x2);
+
+            const e1 = getInnerEdgeHalf(x1);
+            const e2 = getInnerEdgeHalf(x2);
+
+            // left (side=1)
+            const o1L = { x: x1, y: topHeight, z: getOuter(x1, h1y, e1) };
+            const o2L = { x: x2, y: topHeight, z: getOuter(x2, h2y, e2) };
+            pushWall(o1L, o2L);
+            // right (side=-1)
+            const o1R = { x: x1, y: topHeight, z: -getOuter(x1, h1y, e1) };
+            const o2R = { x: x2, y: topHeight, z: -getOuter(x2, h2y, e2) };
+            pushWall(o2R, o1R);
+        }
+
+        // --- Add vertical walls along INNER edges (following IAS + BLS edges) ---
+        for (let i = 0; i < xs.length - 1; i++) {
+            const x1 = xs[i];
+            const x2 = xs[i + 1];
+
+            const h1y = getHeight(x1);
+            const h2y = getHeight(x2);
+
+            const e1 = getInnerEdgeHalf(x1);
+            const e2 = getInnerEdgeHalf(x2);
+
+            // left inner wall
+            const i1L = { x: x1, y: h1y, z: e1 };
+            const i2L = { x: x2, y: h2y, z: e2 };
+            pushWall(i1L, i2L);
+
+            // right inner wall
+            const i1R = { x: x1, y: h1y, z: -e1 };
+            const i2R = { x: x2, y: h2y, z: -e2 };
+            pushWall(i2R, i1R);
+        }
+
+        // --- Add trapezium walls at IAS outer end (closing sides only) ---
+        const xEnd = endX;
+        const hEnd = getHeight(xEnd);
+        const eEnd = getInnerEdgeHalf(xEnd);
+
+
+        const oEnd = getOuter(xEnd, hEnd, eEnd);
+
+        // LEFT trapezium (IAS side)
+        const iEndL = { x: xEnd, y: hEnd, z: eEnd };
+        const oEndL = { x: xEnd, y: topHeight, z: oEnd };
+
+        wallVertices.push(
+            iEndL.x, 0, iEndL.z,
+            iEndL.x, iEndL.y, iEndL.z,
+            oEndL.x, 0, oEndL.z,
+
+            iEndL.x, iEndL.y, iEndL.z,
+            oEndL.x, oEndL.y, oEndL.z,
+            oEndL.x, 0, oEndL.z
+        );
+
+        // RIGHT trapezium (IAS side)
+        const iEndR = { x: xEnd, y: hEnd, z: -eEnd };
+        const oEndR = { x: xEnd, y: topHeight, z: -oEnd };
+
+        wallVertices.push(
+            iEndR.x, 0, iEndR.z,
+            oEndR.x, 0, oEndR.z,
+            iEndR.x, iEndR.y, iEndR.z,
+
+            iEndR.x, iEndR.y, iEndR.z,
+            oEndR.x, 0, oEndR.z,
+            oEndR.x, oEndR.y, oEndR.z
+        );
+
+
+        const wallGeo = new THREE.BufferGeometry();
+        wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3));
+        wallGeo.computeVertexNormals();
+
+        const wallMesh = new THREE.Mesh(
+            wallGeo,
+            new THREE.MeshPhongMaterial({
+                color: 0xffff00,
+                transparent: true,
+                opacity: cfg.opacity * 0.7,
+                side: THREE.DoubleSide
+            })
+        );
+
+        // --- Boundary Lines (longitudinal: outer, inner, and bottom inner edges) ---
+        const lineMat = new THREE.LineBasicMaterial({
+            color: 0xffff00,
+            transparent: true,
+            opacity: 0.85
+        });
+
+        const xsLine = [startX, blsStartX, iaStartX, endX];
+
+        const topOuterL = [];
+        const topOuterR = [];
+        const bottomInnerL = [];
+        const bottomInnerR = [];
+
+        xsLine.forEach(x => {
+            const h = getHeight(x);
+            const e = getInnerEdgeHalf(x);
+            const o = getOuter(x, h, e);
+
+            // LEFT side (positive Z)
+            topOuterL.push(new THREE.Vector3(x, topHeight, o));
+            bottomInnerL.push(new THREE.Vector3(x, h, e));
+
+            // RIGHT side (negative Z)
+            topOuterR.push(new THREE.Vector3(x, topHeight, -o));
+            bottomInnerR.push(new THREE.Vector3(x, h, -e));
+        });
+
+        const makeLine = (pts) =>
+        new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(pts),
+            lineMat
+        );
+
+        const lineGroup = new THREE.Group();
+
+        // longitudinal edges
+        lineGroup.add(
+            makeLine(topOuterL),
+            makeLine(topOuterR),
+            makeLine(bottomInnerL),
+            makeLine(bottomInnerR)
+        );
+
+        // --- ADD outer-end boundary lines (vertical closures) ---
+        const addEndLine = (x) => {
+            const h = getHeight(x);
+            const e = getInnerEdgeHalf(x);
+            const o = getOuter(x, h, e);
+
+            // LEFT vertical edge
+            lineGroup.add(makeLine([
+                new THREE.Vector3(x, h, e),
+                new THREE.Vector3(x, topHeight, o)
+            ]));
+
+            // RIGHT vertical edge
+            lineGroup.add(makeLine([
+                new THREE.Vector3(x, h, -e),
+                new THREE.Vector3(x, topHeight, -o)
+            ]));
+        };
+        // IAS outer end
+        addEndLine(endX);
+        // BLS far end
+        addEndLine(startX);
+
+        return { mesh, wallMesh, line: lineGroup };
+    }
+
+    // --- MIRRORED (RWY 27) Inner Transitional Surface ---
+    function createITSForRunway27(vScale) {
+        const cfg = CONFIG.innerTransitional;
+        const rHalf = CONFIG.runway.length / 2;
+        const ia = CONFIG.innerApproach;
+
+        // Mirror everything along runway center
+        const iaStartX = -(rHalf + ia.distFromThreshold);
+        const iaEndX = iaStartX - ia.length;
+
+        const blsStartX = -(rHalf - CONFIG.balkedLanding.distFromThreshold);
+        const blsEndX = blsStartX + CONFIG.balkedLanding.length;
+
+        const startX = blsEndX;
+        const endX = iaEndX;
+
+        const getInnerEdgeHalf = (x) => {
+            if (x >= blsStartX) {
+                const dist = Math.max(0, x - blsStartX);
+                return (CONFIG.balkedLanding.innerEdge / 2) + (dist * CONFIG.balkedLanding.divergence);
+            }
+            if (x > iaStartX) {
+                return ia.innerEdge / 2;
+            }
+            return ia.innerEdge / 2;
+        };
+
+        const topHeight = cfg.maxHeight * vScale;
+
+        const vertices = [];
+        const addQuad = (v1, v2, v3, v4) => {
+            vertices.push(
+                v1.x, v1.y, v1.z,
+                v2.x, v2.y, v2.z,
+                v4.x, v4.y, v4.z
+            );
+            vertices.push(
+                v2.x, v2.y, v2.z,
+                v3.x, v3.y, v3.z,
+                v4.x, v4.y, v4.z
+            );
+        };
+        const slopeITS = 0.3333;
+        const runAt = (baseHeightScaled) => {
+            const baseHeightTrue = baseHeightScaled / vScale;
+            return (cfg.maxHeight - baseHeightTrue) / slopeITS;
+        };
+
+        const getHeight = (x) => {
+            if (x >= blsEndX) return CONFIG.balkedLanding.length * CONFIG.balkedLanding.slope * vScale;
+
+            if (x >= blsStartX) {
+                const dist = x - blsStartX;
+                return dist * CONFIG.balkedLanding.slope * vScale;
+            }
+
+            if (x > iaStartX) return 0;
+
+            const dist = iaStartX - x;
+            return Math.min(dist, ia.length) * ia.slope * vScale;
+        };
+        const getOuter = (x, baseH, innerE) => {
+            if (x < blsStartX && x > iaStartX) {
+                return innerE + runAt(0);
+            }
+            return innerE + runAt(baseH);
+        };
+
+        const buildSide = (side) => {
+            const xs = [startX, blsStartX, iaStartX, endX];
+
+            for (let i = 0; i < xs.length - 1; i++) {
+                const x1 = xs[i];
+                const x2 = xs[i + 1];
+
+                const h1y = getHeight(x1);
+                const h2y = getHeight(x2);
+
+                const e1 = getInnerEdgeHalf(x1);
+                const e2 = getInnerEdgeHalf(x2);
+
+                const h1 = { x: x1, y: h1y, z: e1 * side };
+                const h2 = { x: x2, y: h2y, z: e2 * side };
+
+                const o1 = { x: x1, y: topHeight, z: getOuter(x1, h1y, e1) * side };
+                const o2 = { x: x2, y: topHeight, z: getOuter(x2, h2y, e2) * side };
+
+                addQuad(h1, h2, o2, o1);
+            }
+        };
+
+        buildSide(1);
+        buildSide(-1);
+
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+        geo.computeVertexNormals();
+
+        const mesh = new THREE.Mesh(
+            geo,
+            new THREE.MeshPhongMaterial({
+                color: 0xffff00,
+                transparent: true,
+                opacity: cfg.opacity,
+                side: THREE.DoubleSide
+            })
+        );
+
+        // --- Add vertical walls along outer edges using the same xs points ---
+        const wallVertices = [];
+
+        const pushWall = (p1, p2) => {
+            wallVertices.push(
+                p1.x, 0, p1.z,
+                p1.x, p1.y, p1.z,
+                p2.x, 0, p2.z,
+
+                p1.x, p1.y, p1.z,
+                p2.x, p2.y, p2.z,
+                p2.x, 0, p2.z
+            );
+        };
+
+        const xs = [startX, blsStartX, iaStartX, endX];
+        for (let i = 0; i < xs.length - 1; i++) {
+            const x1 = xs[i];
+            const x2 = xs[i + 1];
+
+            const h1y = getHeight(x1);
+            const h2y = getHeight(x2);
+
+            const e1 = getInnerEdgeHalf(x1);
+            const e2 = getInnerEdgeHalf(x2);
+
+            // left (side=1)
+            const o1L = { x: x1, y: topHeight, z: getOuter(x1, h1y, e1) };
+            const o2L = { x: x2, y: topHeight, z: getOuter(x2, h2y, e2) };
+            pushWall(o1L, o2L);
+            // right (side=-1)
+            const o1R = { x: x1, y: topHeight, z: -getOuter(x1, h1y, e1) };
+            const o2R = { x: x2, y: topHeight, z: -getOuter(x2, h2y, e2) };
+            pushWall(o2R, o1R);
+        }
+
+        // --- Add vertical walls along INNER edges (following IAS + BLS edges) ---
+        for (let i = 0; i < xs.length - 1; i++) {
+            const x1 = xs[i];
+            const x2 = xs[i + 1];
+
+            const h1y = getHeight(x1);
+            const h2y = getHeight(x2);
+
+            const e1 = getInnerEdgeHalf(x1);
+            const e2 = getInnerEdgeHalf(x2);
+
+            // left inner wall
+            const i1L = { x: x1, y: h1y, z: e1 };
+            const i2L = { x: x2, y: h2y, z: e2 };
+            pushWall(i1L, i2L);
+
+            // right inner wall
+            const i1R = { x: x1, y: h1y, z: -e1 };
+            const i2R = { x: x2, y: h2y, z: -e2 };
+            pushWall(i2R, i1R);
+        }
+
+        // --- Add trapezium walls at IAS outer end (closing sides only) ---
+        const xEnd = endX;
+        const hEnd = getHeight(xEnd);
+        const eEnd = getInnerEdgeHalf(xEnd);
+
+        const oEnd = getOuter(xEnd, hEnd, eEnd);
+
+        // LEFT trapezium (IAS side)
+        const iEndL = { x: xEnd, y: hEnd, z: eEnd };
+        const oEndL = { x: xEnd, y: topHeight, z: oEnd };
+
+        wallVertices.push(
+            iEndL.x, 0, iEndL.z,
+            iEndL.x, iEndL.y, iEndL.z,
+            oEndL.x, 0, oEndL.z,
+
+            iEndL.x, iEndL.y, iEndL.z,
+            oEndL.x, oEndL.y, oEndL.z,
+            oEndL.x, 0, oEndL.z
+        );
+
+        // RIGHT trapezium (IAS side)
+        const iEndR = { x: xEnd, y: hEnd, z: -eEnd };
+        const oEndR = { x: xEnd, y: topHeight, z: -oEnd };
+
+        wallVertices.push(
+            iEndR.x, 0, iEndR.z,
+            oEndR.x, 0, oEndR.z,
+            iEndR.x, iEndR.y, iEndR.z,
+
+            iEndR.x, iEndR.y, iEndR.z,
+            oEndR.x, 0, oEndR.z,
+            oEndR.x, oEndR.y, oEndR.z
+        );
+
+        const wallGeo = new THREE.BufferGeometry();
+        wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3));
+        wallGeo.computeVertexNormals();
+
+        const wallMesh = new THREE.Mesh(
+            wallGeo,
+            new THREE.MeshPhongMaterial({
+                color: 0xffff00,
+                transparent: true,
+                opacity: cfg.opacity * 0.7,
+                side: THREE.DoubleSide
+            })
+        );
+
+        // --- Boundary Lines (longitudinal: outer, inner, and bottom inner edges) ---
+        const lineMat = new THREE.LineBasicMaterial({
+            color: 0xffff00,
+            transparent: true,
+            opacity: 0.85
+        });
+
+        const xsLine = [startX, blsStartX, iaStartX, endX];
+
+        const topOuterL = [];
+        const topOuterR = [];
+        const bottomInnerL = [];
+        const bottomInnerR = [];
+
+        xsLine.forEach(x => {
+            const h = getHeight(x);
+            const e = getInnerEdgeHalf(x);
+            const o = getOuter(x, h, e);
+
+            // LEFT side (positive Z)
+            topOuterL.push(new THREE.Vector3(x, topHeight, o));
+            bottomInnerL.push(new THREE.Vector3(x, h, e));
+
+            // RIGHT side (negative Z)
+            topOuterR.push(new THREE.Vector3(x, topHeight, -o));
+            bottomInnerR.push(new THREE.Vector3(x, h, -e));
+        });
+
+        const makeLine = (pts) =>
+            new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints(pts),
+                lineMat
+            );
+
+        const lineGroup = new THREE.Group();
+
+        // longitudinal edges
+        lineGroup.add(
+            makeLine(topOuterL),
+            makeLine(topOuterR),
+            makeLine(bottomInnerL),
+            makeLine(bottomInnerR)
+        );
+
+        // --- ADD outer-end boundary lines (vertical closures) ---
+        const addEndLine = (x) => {
+            const h = getHeight(x);
+            const e = getInnerEdgeHalf(x);
+            const o = getOuter(x, h, e);
+
+            // LEFT vertical edge
+            lineGroup.add(makeLine([
+                new THREE.Vector3(x, h, e),
+                new THREE.Vector3(x, topHeight, o)
+            ]));
+
+            // RIGHT vertical edge
+            lineGroup.add(makeLine([
+                new THREE.Vector3(x, h, -e),
+                new THREE.Vector3(x, topHeight, -o)
+            ]));
+        };
+        // IAS outer end
+        addEndLine(endX);
+        // BLS far end
+        addEndLine(startX);
+
+        return { mesh, wallMesh: new THREE.Group(), line: new THREE.Group(), mesh, wallMesh, line: lineGroup };
+    }
+
+    let OLS_REFS = {};
+
+    function rebuildSurfaces() {
+      while(olsGroup.children.length > 0){ olsGroup.remove(olsGroup.children[0]); }
+      
+      OLS_REFS.ihs = generateIHS(currentVScale);
+      OLS_REFS.conical = generateConical(currentVScale);
+      OLS_REFS.ohs = generateOHS(currentVScale);
+      OLS_REFS.trans = generateTransitional(currentVScale);
+      
+      const t1 = createSingleTakeOff(1, currentVScale);
+      OLS_REFS.takeoff1 = t1; olsGroup.add(t1.mesh, t1.wallMesh, t1.line);
+      const t2 = createSingleTakeOff(-1, currentVScale);
+      OLS_REFS.takeoff2 = t2; olsGroup.add(t2.mesh, t2.wallMesh, t2.line);
+      
+      const a1 = createSingleApproach(1, currentVScale);
+      OLS_REFS.appr1 = a1; olsGroup.add(a1.mesh, a1.wallMesh, a1.line);
+      const a2 = createSingleApproach(-1, currentVScale);
+      OLS_REFS.appr2 = a2; olsGroup.add(a2.mesh, a2.wallMesh, a2.line);
+      
+      const ia1 = createSingleInnerApproach(1, currentVScale);
+      OLS_REFS.ia1 = ia1; olsGroup.add(ia1.mesh, ia1.wallMesh, ia1.line);
+      const ia2 = createSingleInnerApproach(-1, currentVScale);
+      OLS_REFS.ia2 = ia2; olsGroup.add(ia2.mesh, ia2.wallMesh, ia2.line);
+
+      const bls1 = createSingleBalkedLanding(1, currentVScale);
+      OLS_REFS.bls1 = bls1; olsGroup.add(bls1.mesh, bls1.wallMesh, bls1.line);
+      const bls2 = createSingleBalkedLanding(-1, currentVScale);
+      OLS_REFS.bls2 = bls2; olsGroup.add(bls2.mesh, bls2.wallMesh, bls2.line);
+
+      const its1 = createITSForRunway(currentVScale);
+      const its2 = createITSForRunway27(currentVScale);
+
+      OLS_REFS.its1 = its1;
+      OLS_REFS.its2 = its2;
+
+      olsGroup.add(its1.mesh, its1.wallMesh, its1.line);
+      olsGroup.add(its2.mesh, its2.wallMesh, its2.line);
+      
+      applyDepthFix(olsGroup);
+      applyAllOpacities();
+      updateOLSVisibility();
+      autoFitCamera();
+    }
+
+    function animateCamera(targetPosition, targetLookAt) {
+      const duration = 600; // ms
+      const start = performance.now();
+
+      const startPos = camera.position.clone();
+      const startTarget = controls.target.clone();
+
+      function step(now) {
+        const t = Math.min((now - start) / duration, 1);
+
+        // easeInOutCubic
+        const ease = t < 0.5
+          ? 4 * t * t * t
+          : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+        camera.position.lerpVectors(startPos, targetPosition, ease);
+        controls.target.lerpVectors(startTarget, targetLookAt, ease);
+
+        controls.update();
+
+        if (t < 1) requestAnimationFrame(step);
+      }
+
+      requestAnimationFrame(step);
+    }
+
+    function autoFitCamera() {
+      const box = new THREE.Box3().setFromObject(olsGroup);
+
+      const size = new THREE.Vector3();
+      const center = new THREE.Vector3();
+      box.getSize(size);
+      box.getCenter(center);
+
+      const maxDim = Math.max(size.x, size.y, size.z);
+      const fov = camera.fov * (Math.PI / 180);
+      const distance = maxDim / (2 * Math.tan(fov / 2));
+
+      const dir = new THREE.Vector3(1, 0.5, 1).normalize();
+      const targetPos = center.clone().add(dir.multiplyScalar(distance * 1.5));
+
+      animateCamera(targetPos, center);
+    }
+
+    window.toggleLayerUI = () => { 
+      const p = document.getElementById('layer-panel'); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; 
+    };
+
+    window.updateOpacity = (surface) => {
+      let slider = document.getElementById('op' + surface); if (!slider) return;
+      let val = slider.value / 100;
+      if (surface === 'IHS') { OLS_REFS.ihs.mesh.material.opacity = val; OLS_REFS.ihs.walls.material.opacity = val; }
+      else if (surface === 'Conical') { OLS_REFS.conical.mesh.material.opacity = val; OLS_REFS.conical.walls.material.opacity = val; OLS_REFS.conical.innerWalls.material.opacity = val; }
+      else if (surface === 'OHS') { OLS_REFS.ohs.mesh.material.opacity = val; OLS_REFS.ohs.walls.material.opacity = val; }
+      else if (surface === 'TakeOff') { OLS_REFS.takeoff1.mesh.material.opacity = val; OLS_REFS.takeoff2.mesh.material.opacity = val; OLS_REFS.takeoff1.wallMesh.material.opacity = val * 0.7; OLS_REFS.takeoff2.wallMesh.material.opacity = val * 0.7; }
+      else if (surface === 'TakeOff2') { OLS_REFS.takeoff2.mesh.material.opacity = val; OLS_REFS.takeoff2.wallMesh.material.opacity = val * 0.7; }
+      else if (surface === 'Appr') { OLS_REFS.appr1.mesh.material.opacity = val; OLS_REFS.appr2.mesh.material.opacity = val; OLS_REFS.appr1.wallMesh.material.opacity = val * 0.7; OLS_REFS.appr2.wallMesh.material.opacity = val * 0.7; }
+      else if (surface === 'Appr2') { OLS_REFS.appr2.mesh.material.opacity = val; OLS_REFS.appr2.wallMesh.material.opacity = val * 0.7; }
+      else if (surface === 'InnerAppr') { OLS_REFS.ia1.mesh.material.opacity = val; OLS_REFS.ia2.mesh.material.opacity = val; OLS_REFS.ia1.wallMesh.material.opacity = val * 0.7; OLS_REFS.ia2.wallMesh.material.opacity = val * 0.7; }
+      else if (surface === 'InnerAppr2') { OLS_REFS.ia2.mesh.material.opacity = val; OLS_REFS.ia2.wallMesh.material.opacity = val * 0.7; }
+      else if (surface === 'BLS') { OLS_REFS.bls1.mesh.material.opacity = val; OLS_REFS.bls2.mesh.material.opacity = val; OLS_REFS.bls1.wallMesh.material.opacity = val * 0.7; OLS_REFS.bls2.wallMesh.material.opacity = val * 0.7; }
+      else if (surface === 'BLS2') { OLS_REFS.bls2.mesh.material.opacity = val; OLS_REFS.bls2.wallMesh.material.opacity = val * 0.7; }
+      else if (surface === 'Trans') { [OLS_REFS.trans.g09, OLS_REFS.trans.g27, OLS_REFS.trans.gCentral].forEach(g => { if(g){ g.children[0].material.opacity = val; g.children[1].material.opacity = val * 0.7; }}); }
+      else if (surface === 'Trans27') {
+        OLS_REFS.trans.g27.children[0].material.opacity = val;
+        OLS_REFS.trans.g27.children[1].material.opacity = val * 0.7;
+      }
+      else if (surface === 'ITS') {
+        [OLS_REFS.its1, OLS_REFS.its2].forEach(its => {
+          its.mesh.material.opacity = val;
         });
       }
+      else if (surface === 'ITS2') {
+        OLS_REFS.its2.mesh.material.opacity = val;
+      }
+      const label = document.getElementById('val' + surface); if (label) label.innerText = Math.round(val * 100) + '%';
+    };
 
-      // =============================
-      // RUNWAY STRIP BOUNDARY (NEW)
-      // =============================
-      const stripLength = 2 * stripEnd;
-      const stripWidth = 2 * stripHalf;
-
-      const stripMat = new THREE.LineBasicMaterial({
-        color: 0x99ff66 // light green for visibility
-      });
-
-      const stripPoints = [
-        new THREE.Vector3(-stripEnd, 0.8, -stripHalf),
-        new THREE.Vector3(stripEnd, 0.8, -stripHalf),
-        new THREE.Vector3(stripEnd, 0.8, stripHalf),
-        new THREE.Vector3(-stripEnd, 0.8, stripHalf),
-        new THREE.Vector3(-stripEnd, 0.8, -stripHalf)
+    function applyAllOpacities() {
+      const surfaces = [
+        'IHS','Conical','OHS',
+        'TakeOff','TakeOff2',
+        'Appr','Appr2',
+        'InnerAppr','InnerAppr2',
+        'BLS','BLS2',
+        'Trans','Trans27',
+        'ITS','ITS2'
       ];
 
-      const stripGeometry = new THREE.BufferGeometry().setFromPoints(stripPoints);
-      const stripBoundary = new THREE.Line(stripGeometry, stripMat);
-
-      group.add(stripBoundary);
-
-      runwayGroup.add(group);
+      surfaces.forEach(s => {
+        const slider = document.getElementById('op' + s);
+        if (slider) updateOpacity(s);
+      });
     }
 
-    function createSurface(vertices, indices, color) {
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-      geometry.setIndex(indices);
-      geometry.computeVertexNormals();
+    window.cycleVScale = () => {
+      currentVScale++; if (currentVScale > 10) currentVScale = 1;
+      document.getElementById('zoom-value-text').innerText = currentVScale + 'x';
+      rebuildSurfaces();
+    };
 
-      const mesh = new THREE.Mesh(
-        geometry,
-        new THREE.MeshPhongMaterial({
-          color,
-          transparent: true,
-          opacity: 0.5,
-          side: THREE.DoubleSide
-        })
-      );
-
-      const outline = new THREE.LineSegments(
-        new THREE.EdgesGeometry(geometry),
-        new THREE.LineBasicMaterial({ color: 0xffffff })
-      );
-
-      const group = new THREE.Group();
-      group.add(mesh);
-      group.add(outline);
-      return group;
-    }
-
-
-    function addEdge(group, points, color) {
-      group.add(new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints(points),
-        new THREE.LineBasicMaterial({
-          color: color,
-          transparent: true,
-          opacity: 1
-        })
-      ));
-    }
-
-    function addBoundaryLoops(group, points, topY, brightColor, darkColor) {
-      const topLoop = new THREE.LineLoop(
-        new THREE.BufferGeometry().setFromPoints(
-          points.map(p => new THREE.Vector3(p.x, topY + 0.5, p.z))
-        ),
-        new THREE.LineBasicMaterial({ color: brightColor })
-      );
-
-      const groundLoop = new THREE.LineLoop(
-        new THREE.BufferGeometry().setFromPoints(
-          points.map(p => new THREE.Vector3(p.x, 0.5, p.z))
-        ),
-        new THREE.LineBasicMaterial({ color: darkColor })
-      );
-
-      group.add(topLoop);
-      group.add(groundLoop);
-    }
-
-    function generateTakeoffSurface() {
-      const p = {
-        innerEdge: 180,
-        offset: 60,
-        divergence: 0.125,
-        finalWidth: 1800,
-        length: 15000,
-        slope: 0.02
+    window.updateOLSVisibility = () => {
+      const getV = id => {
+        const el = document.getElementById(id);
+        return el ? el.checked : false;
       };
-
-      const transitionDist = (p.finalWidth - p.innerEdge) / (2 * p.divergence);
-
-      const sections = [
-        { x: p.offset, width: p.innerEdge, height: 0 },
-        { x: p.offset + transitionDist, width: p.finalWidth, height: transitionDist * p.slope },
-        { x: p.offset + p.length, width: p.finalWidth, height: p.length * p.slope }
-      ];
-
-      const vertices = [];
-      sections.forEach(s => {
-        vertices.push(s.x, s.height, -s.width / 2);
-        vertices.push(s.x, s.height, s.width / 2);
-      });
-
-      sections.forEach(s => {
-        vertices.push(s.x, 0, -s.width / 2);
-        vertices.push(s.x, 0, s.width / 2);
-      });
-
-      const indices = [
-        0, 1, 2, 1, 3, 2,
-        2, 3, 4, 3, 5, 4,
-        6, 8, 7, 7, 8, 9,
-        8, 10, 9, 9, 10, 11,
-        0, 2, 6, 2, 8, 6,
-        2, 4, 8, 4, 10, 8,
-        1, 7, 3, 3, 7, 9,
-        3, 9, 5, 5, 9, 11,
-        0, 6, 1, 1, 6, 7,
-        4, 5, 10, 5, 11, 10
-      ];
-
-      const group = createSurface(vertices, indices, 0xff9933);
-
-      if (document.getElementById('chkLabels').checked) {
-        const label = makeTextSprite('TAKE-OFF CLIMB SURFACE 2% / 12.5% DIVERGENCE', '#ffbb66');
-        label.position.set(5000, 140, 0);
-        group.add(label);
-      }
-
-      return group;
-    }
-
-    function generateInnerHorizontalSurface() {
-      const group = new THREE.Group();
-
-      const radius = 4000;
-      const height = 45;
-      const runwayHalfLength = 1350;
-
-      // Semicircle centres are exactly at each runway end.
-      const leftCenter = -runwayHalfLength;
-      const rightCenter = runwayHalfLength;
-
-      const shape = new THREE.Shape();
-
-      // Start at top of left semicircle
-      shape.moveTo(leftCenter, radius);
-
-      // Top straight tangent section
-      shape.lineTo(rightCenter, radius);
-
-      // Right semicircle
-      shape.absarc(
-        rightCenter,
-        0,
-        radius,
-        Math.PI / 2,
-        -Math.PI / 2,
-        true
-      );
-
-      // Bottom straight tangent section
-      shape.lineTo(leftCenter, -radius);
-
-      // Left semicircle
-      shape.absarc(
-        leftCenter,
-        0,
-        radius,
-        -Math.PI / 2,
-        Math.PI / 2,
-        true
-      );
-
-      const geometry = new THREE.ShapeGeometry(shape, 128);
-
-      const surface = new THREE.Mesh(
-        geometry,
-        new THREE.MeshPhongMaterial({
-          color: 0x66ff66,
-          transparent: true,
-          opacity: 0.5,
-          side: THREE.DoubleSide
-        })
-      );
-
-      surface.rotation.x = -Math.PI / 2;
-      surface.position.y = height;
-      group.add(surface);
-
-      const boundaryPoints = shape.getPoints(256).map(
-        p => ({ x: p.x, z: p.y })
-      );
-
-      addBoundaryLoops(
-        group,
-        boundaryPoints,
-        height,
-        0xaaffaa,
-        0x228822
-      );
-
-      const wallPoints = shape.getPoints(256);
-
-      const wallVertices = [];
-
-      for (let i = 0; i < wallPoints.length - 1; i++) {
-        const p1 = wallPoints[i];
-        const p2 = wallPoints[i + 1];
-
-        wallVertices.push(
-          p1.x, 0, p1.y,
-          p2.x, 0, p2.y,
-          p2.x, height, p2.y,
-
-          p1.x, 0, p1.y,
-          p2.x, height, p2.y,
-          p1.x, height, p1.y
-        );
-      }
-
-      const wallGeometry = new THREE.BufferGeometry();
-      wallGeometry.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute(wallVertices, 3)
-      );
-      wallGeometry.computeVertexNormals();
-
-      const walls = new THREE.Mesh(
-        wallGeometry,
-        new THREE.MeshPhongMaterial({
-          color: 0x66ff66,
-          transparent: true,
-          opacity: 0.5,
-          side: THREE.DoubleSide
-        })
-      );
-
-      group.add(walls);
-
-      if (document.getElementById('chkLabels').checked) {
-        const label = makeTextSprite('INNER HORIZONTAL SURFACE - 4000 m FROM EACH RUNWAY END', '#88ff88');
-        label.position.set(0, height + 20, -radius - 600);
-        group.add(label);
-      }
-
-      return group;
-    }
-
-    function generateConicalSurface() {
-      const group = new THREE.Group();
-
-      // Precision Approach CAT II / III, Code 3 or 4
-      // Conical surface rises 5% for 100 m beyond the inner horizontal surface.
-      const innerRadius = 4000;
-      const outerRadius = 6100;
-      const innerHeight = 45;
-      const outerHeight = 150;
-      const runwayHalfLength = 1350;
-
-      function makeRacetrackShape(radius) {
-        const leftCenter = -runwayHalfLength;
-        const rightCenter = runwayHalfLength;
-
-        const shape = new THREE.Shape();
-        shape.moveTo(leftCenter, radius);
-        shape.lineTo(rightCenter, radius);
-
-        shape.absarc(
-          rightCenter,
-          0,
-          radius,
-          Math.PI / 2,
-          -Math.PI / 2,
-          true
-        );
-
-        shape.lineTo(leftCenter, -radius);
-
-        shape.absarc(
-          leftCenter,
-          0,
-          radius,
-          -Math.PI / 2,
-          Math.PI / 2,
-          true
-        );
-
-        return shape;
-      }
-
-      const innerPts = makeRacetrackShape(innerRadius).getPoints(256);
-      const outerPts = makeRacetrackShape(outerRadius).getPoints(256);
-
-      const vertices = [];
-
-      for (let i = 0; i < innerPts.length - 1; i++) {
-        const i1 = innerPts[i];
-        const i2 = innerPts[i + 1];
-        const o1 = outerPts[i];
-        const o2 = outerPts[i + 1];
-
-        vertices.push(
-          i1.x, innerHeight, i1.y,
-          i2.x, innerHeight, i2.y,
-          o2.x, outerHeight, o2.y,
-
-          i1.x, innerHeight, i1.y,
-          o2.x, outerHeight, o2.y,
-          o1.x, outerHeight, o1.y
-        );
-      }
-
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute(vertices, 3)
-      );
-      geometry.computeVertexNormals();
-
-      const mesh = new THREE.Mesh(
-        geometry,
-        new THREE.MeshPhongMaterial({
-          color: 0xaa66ff,
-          transparent: true,
-          opacity: 0.5,
-          side: THREE.DoubleSide
-        })
-      );
-      group.add(mesh);
-
-      const innerOutline = new THREE.LineLoop(
-        new THREE.BufferGeometry().setFromPoints(
-          innerPts.map(p => new THREE.Vector3(p.x, innerHeight + 0.5, p.y))
-        ),
-        new THREE.LineBasicMaterial({ color: 0xcc99ff })
-      );
-      group.add(innerOutline);
-
-      const outerOutline = new THREE.LineLoop(
-        new THREE.BufferGeometry().setFromPoints(
-          outerPts.map(p => new THREE.Vector3(p.x, outerHeight + 0.5, p.y))
-        ),
-        new THREE.LineBasicMaterial({ color: 0xe0bbff })
-      );
-      group.add(outerOutline);
-
-      addBoundaryLoops(
-        group,
-        innerPts.map(p => ({ x: p.x, z: p.y })),
-        innerHeight,
-        0xcc99ff,
-        0x553377
-      );
-
-      addBoundaryLoops(
-        group,
-        outerPts.map(p => ({ x: p.x, z: p.y })),
-        outerHeight,
-        0xe6bbff,
-        0x553377
-      );
-
-      function buildVerticalWall(points, baseHeight, topHeight, color, opacity) {
-        const verts = [];
-
-        for (let i = 0; i < points.length - 1; i++) {
-          const p1 = points[i];
-          const p2 = points[i + 1];
-
-          verts.push(
-            p1.x, baseHeight, p1.y,
-            p2.x, baseHeight, p2.y,
-            p2.x, topHeight, p2.y,
-
-            p1.x, baseHeight, p1.y,
-            p2.x, topHeight, p2.y,
-            p1.x, topHeight, p1.y
-          );
-        }
-
-        const g = new THREE.BufferGeometry();
-        g.setAttribute(
-          'position',
-          new THREE.Float32BufferAttribute(verts, 3)
-        );
-        g.computeVertexNormals();
-
-        return new THREE.Mesh(
-          g,
-          new THREE.MeshPhongMaterial({
-            color,
-            transparent: true,
-            opacity,
-            side: THREE.DoubleSide
-          })
-        );
-      }
-
-      const innerWall = buildVerticalWall(
-        innerPts,
-        0,
-        innerHeight,
-        0xaa66ff,
-        0.5
-      );
-      group.add(innerWall);
-
-      const outerWall = buildVerticalWall(
-        outerPts,
-        0,
-        outerHeight,
-        0xaa66ff,
-        0.5
-      );
-      group.add(outerWall);
-
-      if (document.getElementById('chkLabels').checked) {
-        const title = makeTextSprite('CONICAL SURFACE', '#d6b0ff');
-        title.position.set(0, 165, -6500);
-        group.add(title);
-
-        const slopeLabel = makeTextSprite('Slope 5% for 2100 m', '#d6b0ff');
-        slopeLabel.position.set(5000, 100, 0);
-        group.add(slopeLabel);
-
-        const heightLabel = makeTextSprite('45 m to 150 m', '#d6b0ff');
-        heightLabel.position.set(-5000, 95, 0);
-        group.add(heightLabel);
-      }
-
-      return group;
-    }
-
-    function generateOuterHorizontalSurface() {
-      const group = new THREE.Group();
-
-      const radius = 15000;
-      const height = 150;
-      const segments = 256;
-
-      // =============================
-      // TOP SURFACE
-      // =============================
-      const topGeometry = new THREE.CircleGeometry(radius, segments);
-
-      const top = new THREE.Mesh(
-        topGeometry,
-        new THREE.MeshPhongMaterial({
-          color: 0x66aaff,
-          transparent: true,
-          opacity: 0.5,
-          side: THREE.DoubleSide
-        })
-      );
-
-      top.rotation.x = -Math.PI / 2;
-      top.position.y = height;
-      group.add(top);
-
-      // =============================
-      // CLEAN CIRCULAR OUTLINE
-      // =============================
-      const outlinePoints = [];
-
-      for (let i = 0; i < segments; i++) {
-        const angle = (i / segments) * Math.PI * 2;
-
-        outlinePoints.push(
-          new THREE.Vector3(
-            Math.cos(angle) * radius,
-            height + 0.5,
-            Math.sin(angle) * radius
-          )
-        );
-      }
-
-      const outline = new THREE.LineLoop(
-        new THREE.BufferGeometry().setFromPoints(outlinePoints),
-        new THREE.LineBasicMaterial({ color: 0xaaccff })
-      );
-
-      group.add(outline);
-
-      // =============================
-      // SIDE WALLS
-      // =============================
-      const wallVertices = [];
-
-      for (let i = 0; i < outlinePoints.length; i++) {
-        const p1 = outlinePoints[i];
-        const p2 = outlinePoints[(i + 1) % outlinePoints.length];
-
-        wallVertices.push(
-          p1.x, 0, p1.z,
-          p2.x, 0, p2.z,
-          p2.x, height, p2.z,
-
-          p1.x, 0, p1.z,
-          p2.x, height, p2.z,
-          p1.x, height, p1.z
-        );
-      }
-
-      const wallGeometry = new THREE.BufferGeometry();
-      wallGeometry.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute(wallVertices, 3)
-      );
-      wallGeometry.computeVertexNormals();
-
-      const walls = new THREE.Mesh(
-        wallGeometry,
-        new THREE.MeshPhongMaterial({
-          color: 0x66aaff,
-          transparent: true,
-          opacity: 0.5,
-          side: THREE.DoubleSide
-        })
-      );
-
-      group.add(walls);
-
-      // =============================
-      // LABELS (OPTIONAL)
-      // =============================
-      if (document.getElementById('chkLabels').checked) {
-        const title = makeTextSprite('OUTER HORIZONTAL SURFACE', '#aacfff');
-        title.position.set(0, height + 30, -radius - 1000);
-        group.add(title);
-
-        const radiusLabel = makeTextSprite(
-          'Radius 15000 m from Aerodrome Reference Point',
-          '#aacfff'
-        );
-        radiusLabel.position.set(radius * 0.55, height + 15, 0);
-        group.add(radiusLabel);
-
-        const heightLabel = makeTextSprite('Height 150 m', '#aacfff');
-        heightLabel.position.set(-radius * 0.55, height + 15, 0);
-        group.add(heightLabel);
-      }
-
-      return group;
-    }
-
-    function generateTransitionalApproachSection(sign) {
-      const group = new THREE.Group();
-
-      const ihsHeight = 45;
-      const slope = 0.1433;
-      const material = new THREE.MeshPhongMaterial({
-        color: 0xff44bb,
-        transparent: true,
-        opacity: 0.45,
-        side: THREE.DoubleSide
-      });
-
-      // Coordinates are before the final rotate/translate already applied outside
-
-      const thresholdX = -OLS.runway.half;     // -1350
-      const stripJoin = thresholdX - 60;       // -1410
-
-      const stripFarEnd = OLS.runway.stripEnd; // +1410
-
-      const x45 = stripJoin - (OLS.transitional.ihsHeight / OLS.approach.firstSlope);
-
-      const stripInner = sign * OLS.runway.stripHalfWidth;
-
-      const stripOuter = sign * (
-        OLS.runway.stripHalfWidth +
-        (OLS.transitional.ihsHeight / OLS.transitional.slope)
-      );
-
-      const approachOuterAt45 = sign * (
-        OLS.runway.stripHalfWidth +
-        OLS.approach.divergence * (stripJoin - x45)
-      );
-
-      // Single continuous polygon:
-      // lower edge follows strip then approach side
-      // upper edge follows IHS intersection line back
-
-      const vertices = [
-        // lower edge
-        stripFarEnd, 0, stripInner, // 0
-        stripJoin, 0, stripInner, // 1
-        x45, 45, approachOuterAt45, // 2
-
-        // upper edge
-        x45, 45, approachOuterAt45, // 3
-        stripJoin, ihsHeight, stripOuter, // 4
-        stripFarEnd, ihsHeight, stripOuter // 5
-      ];
-
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute(vertices, 3)
-      );
-
-      geometry.setIndex([
-        // main continuous surface
-        0, 1, 4,
-        0, 4, 5,
-
-        1, 2, 3,
-        1, 3, 4
-      ]);
-
-      geometry.computeVertexNormals();
-
-      const mesh = new THREE.Mesh(geometry, material);
-      group.add(mesh);
-
-      // rear closing wall only at far strip end
-      const rearWall = new THREE.BufferGeometry();
-      rearWall.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute([
-          stripFarEnd, 0, stripInner,
-          stripFarEnd, ihsHeight, stripOuter,
-          stripFarEnd, 0, stripOuter
-        ], 3)
-      );
-      rearWall.setIndex([0, 1, 2]);
-      rearWall.computeVertexNormals();
-
-      group.add(new THREE.Mesh(rearWall, material));
-
-      // Bright upper boundary
-      group.add(new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(stripFarEnd, ihsHeight + 0.5, stripOuter),
-          new THREE.Vector3(stripJoin, ihsHeight + 0.5, stripOuter),
-          new THREE.Vector3(x45, ihsHeight + 0.5, approachOuterAt45)
-        ]),
-        new THREE.LineBasicMaterial({ color: 0xffccff })
-      ));
-
-      // Dark lower boundary
-      group.add(new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(stripFarEnd, 0.5, stripInner),
-          new THREE.Vector3(stripJoin, 0.5, stripInner),
-          new THREE.Vector3(x45, 45.5, approachOuterAt45)
-        ]),
-        new THREE.LineBasicMaterial({ color: 0xff00ff })
-      ));
-
-
-      // ---- SIDE WALLS ----
-
-      // 1. INNER WALL (vertical plane at strip edge)
-      const innerWallGeom = new THREE.BufferGeometry();
-      innerWallGeom.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute([
-          stripFarEnd, 0, stripInner,          // 0
-          stripJoin, 0, stripInner,            // 1
-          stripJoin, ihsHeight, stripOuter,    // 2
-          stripFarEnd, ihsHeight, stripOuter   // 3
-        ], 3)
-      );
-
-      // correct winding
-      innerWallGeom.setIndex([
-        0, 1, 2,
-        0, 2, 3
-      ]);
-
-      innerWallGeom.computeVertexNormals();
-      group.add(new THREE.Mesh(innerWallGeom, material));
-
-
-      // 2. OUTER WALL (proper quad, not broken triangles)
-      const outerWallGeom = new THREE.BufferGeometry();
-      outerWallGeom.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute([
-          stripFarEnd, 0, stripOuter,              // 0
-          stripJoin, 0, stripOuter,                // 1
-          x45, 45, approachOuterAt45,              // 2
-          stripFarEnd, ihsHeight, stripOuter,      // 3
-          stripJoin, ihsHeight, stripOuter,        // 4
-          x45, ihsHeight, approachOuterAt45        // 5
-        ], 3)
-      );
-
-      // split into 4 triangles (correct surface)
-      outerWallGeom.setIndex([
-        0, 1, 2,
-        3, 5, 4,
-        0, 2, 3,
-        2, 5, 3
-      ]);
-
-      outerWallGeom.computeVertexNormals();
-      group.add(new THREE.Mesh(outerWallGeom, material));
-
-
-      // 3. FRONT WALL (approach side)
-      const frontWallGeom = new THREE.BufferGeometry();
-      frontWallGeom.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute([
-          stripJoin, 0, stripInner,             // 0
-          x45, 45, approachOuterAt45,           // 1
-          x45, ihsHeight, approachOuterAt45,    // 2
-          stripJoin, ihsHeight, stripOuter      // 3
-        ], 3)
-      );
-
-      frontWallGeom.setIndex([
-        0, 1, 2,
-        0, 2, 3
-      ]);
-
-      frontWallGeom.computeVertexNormals();
-      group.add(new THREE.Mesh(frontWallGeom, material));
-
-
-
-      addEdge(group, [
-        new THREE.Vector3(stripFarEnd, 0.5, stripInner),
-        new THREE.Vector3(stripJoin, 0.5, stripInner),
-        new THREE.Vector3(x45, 45.5, approachOuterAt45)
-      ], 0xff00ff);
-
-      addEdge(group, [
-        new THREE.Vector3(stripFarEnd, 0, stripInner),
-        new THREE.Vector3(stripFarEnd, ihsHeight, stripOuter)
-      ], 0xff88cc);
-
-
-
-      addEdge(group, [
-        new THREE.Vector3(stripFarEnd, 0, stripOuter),
-        new THREE.Vector3(stripFarEnd, ihsHeight, stripOuter)
-      ], 0xff88cc);
-
-
-
-      addEdge(group, [
-        new THREE.Vector3(stripJoin, 0, stripInner),
-        new THREE.Vector3(x45, 45, approachOuterAt45)
-      ], 0xffffff);
-
-
-
-      return group;
-    }
-
-    function generateTransitionalSurface() {
-      const group = new THREE.Group();
-
-      const left = generateTransitionalApproachSection(-1);
-      group.add(left);
-
-      const right = generateTransitionalApproachSection(1);
-      group.add(right);
-
-      if (document.getElementById('chkLabels').checked) {
-        const label = makeTextSprite(
-          'TRANSITIONAL SURFACE 14.33%',
-          '#ff99dd'
-        );
-        label.position.set(-500, 65, 700);
-        group.add(label);
-
-        const label2 = makeTextSprite(
-          'Rises from approach / strip edge to 45 m',
-          '#ff99dd'
-        );
-        label2.position.set(-1300, 40, 900);
-        group.add(label2);
-      }
-
-      return group;
-    }
-
-    function generateApproachSurface() {
-      const p = {
-        innerEdge: 280,
-        offset: 60,
-        divergence: 0.15,
-        firstLength: 3000,
-        firstSlope: 0.02,
-        secondLength: 3600,
-        secondSlope: 0.025,
-        horizontalLength: 8400
+      const setSliderState = (chkId, sliderId) => {
+        const chk = document.getElementById(chkId);
+        const slider = document.getElementById(sliderId);
+        if (slider) slider.disabled = !chk.checked;
       };
+      [OLS_REFS.ihs.mesh, OLS_REFS.ihs.walls, OLS_REFS.ihs.lines].forEach(m => m.visible = getV('chkIHS'));
+      setSliderState('chkIHS','opIHS');
+      [OLS_REFS.conical.mesh, OLS_REFS.conical.walls, OLS_REFS.conical.innerWalls, OLS_REFS.conical.lines].forEach(m => m.visible = getV('chkConical'));
+      setSliderState('chkConical','opConical');
+      [OLS_REFS.ohs.mesh, OLS_REFS.ohs.walls, OLS_REFS.ohs.lines].forEach(m => m.visible = getV('chkOHS'));
+      setSliderState('chkOHS','opOHS');
+      [OLS_REFS.takeoff1.mesh, OLS_REFS.takeoff1.wallMesh, OLS_REFS.takeoff1.line].forEach(m => m.visible = getV('chkTakeOff1'));
+      setSliderState('chkTakeOff1','opTakeOff');
+      [OLS_REFS.takeoff2.mesh, OLS_REFS.takeoff2.wallMesh, OLS_REFS.takeoff2.line].forEach(m => m.visible = getV('chkTakeOff2'));
+      setSliderState('chkTakeOff2','opTakeOff2');
+      [OLS_REFS.appr1.mesh, OLS_REFS.appr1.wallMesh, OLS_REFS.appr1.line].forEach(m => m.visible = getV('chkAppr1'));
+      setSliderState('chkAppr1','opAppr');
+      [OLS_REFS.appr2.mesh, OLS_REFS.appr2.wallMesh, OLS_REFS.appr2.line].forEach(m => m.visible = getV('chkAppr2'));
+      setSliderState('chkAppr2','opAppr2');
+      [OLS_REFS.ia1.mesh, OLS_REFS.ia1.wallMesh, OLS_REFS.ia1.line].forEach(m => m.visible = getV('chkInnerAppr1'));
+      setSliderState('chkInnerAppr1','opInnerAppr');
+      [OLS_REFS.ia2.mesh, OLS_REFS.ia2.wallMesh, OLS_REFS.ia2.line].forEach(m => m.visible = getV('chkInnerAppr2'));
+      setSliderState('chkInnerAppr2','opInnerAppr2');
+      [OLS_REFS.bls1.mesh, OLS_REFS.bls1.wallMesh, OLS_REFS.bls1.line].forEach(m => m.visible = getV('chkBLS1'));
+      setSliderState('chkBLS1','opBLS');
+      [OLS_REFS.bls2.mesh, OLS_REFS.bls2.wallMesh, OLS_REFS.bls2.line].forEach(m => m.visible = getV('chkBLS2'));
+      setSliderState('chkBLS2','opBLS2');
+      [OLS_REFS.its1.mesh, OLS_REFS.its1.wallMesh, OLS_REFS.its1.line]
+        .forEach(m => m.visible = getV('chkITS1'));
+      setSliderState('chkITS1','opITS');
+      [OLS_REFS.its2.mesh, OLS_REFS.its2.wallMesh, OLS_REFS.its2.line]
+        .forEach(m => m.visible = getV('chkITS2'));
+      setSliderState('chkITS2','opITS2');
+      OLS_REFS.trans.g09.visible = getV('chkTrans09'); 
+      setSliderState('chkTrans09','opTrans');
+      OLS_REFS.trans.g27.visible = getV('chkTrans27');
+      setSliderState('chkTrans27','opTrans27');
+      OLS_REFS.trans.gCentral.visible = getV('chkTrans09') || getV('chkTrans27');
+      updateRunwayGroupState('09');
+      updateRunwayGroupState('27');
+      updateCommonGroupState();
+      updateOFZGroupState('09');
+      updateOFZGroupState('27');
+    };
 
-      const h1 = p.firstLength * p.firstSlope;
-      const h2 = h1 + p.secondLength * p.secondSlope;
+    function updateRunwayGroupState(rwy) {
+      const is09 = rwy === '09';
+      const parent = document.getElementById(is09 ? 'chkRwy09' : 'chkRwy27');
 
-      const thresholdX = -OLS.runway.half;
-      const startX = thresholdX - 60;
+      const ids = is09
+        ? ['chkTrans09','chkITS1','chkTakeOff1','chkAppr1','chkInnerAppr1','chkBLS1']
+        : ['chkTrans27','chkITS2','chkTakeOff2','chkAppr2','chkInnerAppr2','chkBLS2'];
 
-      const sections = [
-        { x: startX, width: p.innerEdge, height: 0 },
-        {
-          x: startX - p.firstLength,
-          width: p.innerEdge + 2 * p.divergence * p.firstLength,
-          height: h1
-        },
-        {
-          x: startX - (p.firstLength + p.secondLength),
-          width: p.innerEdge + 2 * p.divergence * (p.firstLength + p.secondLength),
-          height: h2
-        },
-        {
-          x: startX - (p.firstLength + p.secondLength + p.horizontalLength),
-          width: p.innerEdge + 2 * p.divergence * (p.firstLength + p.secondLength + p.horizontalLength),
-          height: h2
-        }
-      ];
+      const states = ids.map(id => document.getElementById(id).checked);
 
-      const vertices = [];
+      const allChecked = states.every(v => v);
+      const anyChecked = states.some(v => v);
 
-      sections.forEach(s => {
-        vertices.push(s.x, s.height, -s.width / 2);
-        vertices.push(s.x, s.height, s.width / 2);
-      });
-
-      sections.forEach(s => {
-        vertices.push(s.x, 0, -s.width / 2);
-        vertices.push(s.x, 0, s.width / 2);
-      });
-
-      const idx = [];
-
-      for (let i = 0; i < sections.length - 1; i++) {
-        const tl1 = i * 2;
-        const tr1 = tl1 + 1;
-        const tl2 = tl1 + 2;
-        const tr2 = tl1 + 3;
-
-        idx.push(tl1, tr1, tl2);
-        idx.push(tr1, tr2, tl2);
-
-        const bl1 = 8 + i * 2;
-        const br1 = bl1 + 1;
-        const bl2 = bl1 + 2;
-        const br2 = bl1 + 3;
-
-        idx.push(bl1, bl2, br1);
-        idx.push(br1, bl2, br2);
-
-        idx.push(tl1, tl2, bl1);
-        idx.push(tl2, bl2, bl1);
-
-        idx.push(tr1, br1, tr2);
-        idx.push(tr2, br1, br2);
-
-        if (i < sections.length - 2) {
-          idx.push(tl2, tr2, bl2);
-          idx.push(tr2, br2, bl2);
-        }
-      }
-
-      idx.push(0, 8, 1);
-      idx.push(1, 8, 9);
-
-      idx.push(6, 7, 14);
-      idx.push(7, 15, 14);
-
-      const surface = createSurface(vertices, idx, 0x00bfff);
-
-      // ONLY cross-section lines (keep these)
-      [sections[1], sections[2]].forEach(s => {
-        const line = new THREE.Line(
-          new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(s.x, s.height + 0.5, -s.width / 2),
-            new THREE.Vector3(s.x, s.height + 0.5, s.width / 2)
-          ]),
-          new THREE.LineBasicMaterial({ color: 0xffffff })
-        );
-        surface.add(line);
-      });
-
-      return surface;
+      parent.checked = allChecked;
+      parent.indeterminate = !allChecked && anyChecked;
     }
 
+    function updateCommonGroupState() {
+      const parent = document.getElementById('chkCommon');
+      const ids = ['chkIHS','chkConical','chkOHS'];
 
+      const states = ids.map(id => document.getElementById(id).checked);
 
-    //Obstacle Free Zone Surfaces
+      const allChecked = states.every(v => v);
+      const anyChecked = states.some(v => v);
 
-    function generateInnerApproachSurface() {
+      parent.checked = allChecked;
+      parent.indeterminate = !allChecked && anyChecked;
+    }
 
-      const group = new THREE.Group();
+    function updateOFZGroupState(rwy) {
+      const is09 = rwy === '09';
+      const parent = document.getElementById(is09 ? 'chkOFZ09' : 'chkOFZ27');
 
-      const width = 120;
-      const length = 900;
-      const slope = 0.02;
+      const ids = is09
+        ? ['chkInnerAppr1','chkBLS1','chkITS1']
+        : ['chkInnerAppr2','chkBLS2','chkITS2'];
 
-      const thresholdX = -OLS.runway.half;
-      const startX = thresholdX - 60;
+      const states = ids.map(id => document.getElementById(id).checked);
 
-      const endX = startX - length;
-      const endHeight = length * slope;
+      const allChecked = states.every(v => v);
+      const anyChecked = states.some(v => v);
 
-      const halfW = width / 2;
+      parent.checked = allChecked;
+      parent.indeterminate = !allChecked && anyChecked;
+    }
 
-      // =============================
-      // MAIN SURFACE
-      // =============================
-      const vertices = [
-        // lower edge (threshold)
-        startX, 0, -halfW,
-        startX, 0, halfW,
+    window.toggleRunwayGroup = (rwy) => {
+      const is09 = rwy === '09';
+      const master = document.getElementById(is09 ? 'chkRwy09' : 'chkRwy27').checked;
 
-        // far edge (900 m)
-        endX, endHeight, -halfW,
-        endX, endHeight, halfW,
+      const ids = is09
+        ? ['chkTrans09','chkITS1','chkTakeOff1','chkAppr1','chkInnerAppr1','chkBLS1']
+        : ['chkTrans27','chkITS2','chkTakeOff2','chkAppr2','chkInnerAppr2','chkBLS2'];
 
-        // bottom face
-        startX, 0, -halfW,
-        startX, 0, halfW,
-        endX, 0, -halfW,
-        endX, 0, halfW
-      ];
-
-      const indices = [
-        // top
-        0, 1, 2,
-        1, 3, 2,
-
-        // bottom
-        4, 6, 5,
-        5, 6, 7,
-
-        // left wall
-        0, 2, 4,
-        2, 6, 4,
-
-        // right wall
-        1, 5, 3,
-        3, 5, 7,
-
-        // front wall (threshold)
-        0, 4, 1,
-        1, 4, 5,
-
-        // rear wall (far end)
-        2, 3, 6,
-        3, 7, 6
-      ];
-
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute(vertices, 3)
-      );
-      geometry.setIndex(indices);
-      geometry.computeVertexNormals();
-
-      const material = new THREE.MeshPhongMaterial({
-        color: 0xffaa00, // distinguish from approach
-        transparent: true,
-        opacity: 0.5,
-        side: THREE.DoubleSide
+      ids.forEach(id => {
+        document.getElementById(id).checked = master;
       });
 
-      const mesh = new THREE.Mesh(geometry, material);
-      group.add(mesh);
-
-      // =============================
-      // BOUNDARY LINES (CLEAN)
-      // =============================
-
-      // upper edges
-      group.add(new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(startX, 0.5, halfW),
-          new THREE.Vector3(endX, endHeight + 0.5, halfW)
-        ]),
-        new THREE.LineBasicMaterial({ color: 0xffdd88 })
-      ));
-
-      group.add(new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(startX, 0.5, -halfW),
-          new THREE.Vector3(endX, endHeight + 0.5, -halfW)
-        ]),
-        new THREE.LineBasicMaterial({ color: 0xffdd88 })
-      ));
-
-      // end cross line
-      group.add(new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(endX, endHeight + 0.5, -halfW),
-          new THREE.Vector3(endX, endHeight + 0.5, halfW)
-        ]),
-        new THREE.LineBasicMaterial({ color: 0xffffff })
-      ));
-
-      // =============================
-      // LABEL (OPTIONAL)
-      // =============================
-      if (document.getElementById('chkLabels').checked) {
-        const label = makeTextSprite(
-          'INNER APPROACH SURFACE (2%, 900m)',
-          '#ffcc66'
-        );
-        label.position.set(startX - 450, endHeight + 20, 0);
-        group.add(label);
-      }
-
-      return group;
-    }
-
-
-    function generateInnerTransitionalSurface(sign) {
-
-  const group = new THREE.Group();
-
-  const slope = 1 / 3;        // 33.33%
-  const ihsHeight = 45;
-
-  const material = new THREE.MeshPhongMaterial({
-    color: 0x00cccc,
-    transparent: true,
-    opacity: 0.6,
-    side: THREE.DoubleSide
-  });
-
-  const wallMaterial = new THREE.MeshPhongMaterial({
-    color: 0x009999,
-    transparent: true,
-    opacity: 0.35,
-    side: THREE.DoubleSide
-  });
-
-  const thresholdX = -OLS.runway.half;
-
-  // =============================
-  // IAS
-  // =============================
-
-  const xIASstart = thresholdX - 60;
-  const xIASend   = xIASstart - 900;
-
-  function iasHeight(x) {
-    const d = xIASstart - x;
-    return Math.max(0, d * 0.02);
-  }
-
-  // =============================
-  // BLS
-  // =============================
-
-  const xBLSstart = thresholdX + 1800;
-
-  const blsSlope = 1 / 30;
-  const blsDiv = 0.10;
-
-  const blsLength = ihsHeight / blsSlope;
-  const xBLSend = xBLSstart + blsLength;
-
-  function blsHeight(x) {
-    const d = x - xBLSstart;
-    return Math.max(0, d * blsSlope);
-  }
-
-  function blsWidth(x) {
-    const d = x - xBLSstart;
-    return 60 + blsDiv * d;
-  }
-
-  // =============================
-  // HELPERS
-  // =============================
-
-  function makeSurface(x1, z1, h1, x2, z2, h2) {
-
-    const offset1 = (ihsHeight - h1) / slope;
-    const offset2 = (ihsHeight - h2) / slope;
-
-    const outer1 = sign * (Math.abs(z1) + offset1);
-    const outer2 = sign * (Math.abs(z2) + offset2);
-
-    const geom = new THREE.BufferGeometry();
-
-    geom.setAttribute(
-      'position',
-      new THREE.Float32BufferAttribute([
-        x1, h1, z1,
-        x2, h2, z2,
-        x2, ihsHeight, outer2,
-        x1, ihsHeight, outer1
-      ], 3)
-    );
-
-    geom.setIndex([0,1,2, 0,2,3]);
-    geom.computeVertexNormals();
-
-    group.add(new THREE.Mesh(geom, material));
-
-    // ---- side wall (slightly offset to avoid z-fighting)
-    const EPS = 0.4;
-
-    const wallGeom = new THREE.BufferGeometry();
-    wallGeom.setAttribute(
-      'position',
-      new THREE.Float32BufferAttribute([
-        x1, h1, z1,
-        x2, h2, z2,
-        x2, ihsHeight, outer2 + sign * EPS,
-        x1, ihsHeight, outer1 + sign * EPS
-      ], 3)
-    );
-
-    wallGeom.setIndex([0,1,2, 0,2,3]);
-    wallGeom.computeVertexNormals();
-
-    group.add(new THREE.Mesh(wallGeom, wallMaterial));
-  }
-
-  function addLine(points, color, lift = 1) {
-    group.add(new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(
-        points.map(p => new THREE.Vector3(p.x, p.y + lift, p.z))
-      ),
-      new THREE.LineBasicMaterial({ color })
-    ));
-  }
-
-  // =============================
-  // SEGMENT 1 — IAS
-  // =============================
-
-  makeSurface(
-    xIASend,  sign * 60, iasHeight(xIASend),
-    xIASstart,sign * 60, iasHeight(xIASstart)
-  );
-
-  // =============================
-  // SEGMENT 2 — STRIP
-  // =============================
-
-  makeSurface(
-    xIASstart, sign * 60, 0,
-    xBLSstart, sign * 60, 0
-  );
-
-  // =============================
-  // SEGMENT 3 — BLS
-  // =============================
-
-  const steps = 12;
-
-  for (let i = 0; i < steps; i++) {
-
-    const x1 = xBLSstart + (i / steps) * blsLength;
-    const x2 = xBLSstart + ((i + 1) / steps) * blsLength;
-
-    const z1 = sign * blsWidth(x1);
-    const z2 = sign * blsWidth(x2);
-
-    makeSurface(
-      x1, z1, blsHeight(x1),
-      x2, z2, blsHeight(x2)
-    );
-  }
-
-  // =============================
-  // BOUNDARY LINES
-  // =============================
-
-  // inner edge
-  addLine([
-    {x: xIASend, y: iasHeight(xIASend), z: sign*60},
-    {x: xIASstart, y: iasHeight(xIASstart), z: sign*60},
-    {x: xBLSstart, y: 0, z: sign*60}
-  ], 0xffffff);
-
-  // outer edge
-  addLine([
-    {x: xIASend, y: ihsHeight, z: sign*(60 + (ihsHeight - iasHeight(xIASend))/slope)},
-    {x: xIASstart, y: ihsHeight, z: sign*(60 + ihsHeight/slope)},
-    {x: xBLSend, y: ihsHeight, z: sign*(60 + blsDiv*(xBLSend - xBLSstart))}
-  ], 0xffffff, 1.2);
-
-  // vertical connectors (visual clarity)
-  addLine([
-    {x: xIASstart, y: 0, z: sign*60},
-    {x: xIASstart, y: ihsHeight, z: sign*(60 + ihsHeight/slope)}
-  ], 0xffff00);
-
-  addLine([
-    {x: xBLSstart, y: 0, z: sign*60},
-    {x: xBLSstart, y: ihsHeight, z: sign*(60 + ihsHeight/slope)}
-  ], 0xffff00);
-
-  return group;
-}
-
-
-    function generateBalkedLandingSurface() {
-
-      const group = new THREE.Group();
-
-      const slope = 1 / 30; // 3.33%
-      const divergence = 0.10;
-      const ihsHeight = 45;
-
-      const innerHalf = 60;
-
-      // =============================
-      // POSITIONING
-      // =============================
-
-      const thresholdX = -OLS.runway.half;
-
-      const startX = thresholdX + 1800;
-
-      const length = ihsHeight / slope;
-      const endX = startX + length;
-
-      const hEnd = ihsHeight;
-
-      // =============================
-      // WIDTHS
-      // =============================
-
-      const halfStart = innerHalf;
-      const halfEnd = innerHalf + divergence * length;
-
-      // =============================
-      // GEOMETRY
-      // =============================
-
-      const vertices = [
-
-        // LOWER EDGE
-        startX, 0, -halfStart,
-        startX, 0, halfStart,
-        endX, hEnd, -halfEnd,
-        endX, hEnd, halfEnd,
-
-        // BOTTOM
-        startX, 0, -halfStart,
-        startX, 0, halfStart,
-        endX, 0, -halfEnd,
-        endX, 0, halfEnd
-      ];
-
-      const indices = [
-        // top
-        0, 1, 2,
-        1, 3, 2,
-
-        // bottom
-        4, 6, 5,
-        5, 6, 7,
-
-        // left wall
-        0, 2, 4,
-        2, 6, 4,
-
-        // right wall
-        1, 5, 3,
-        3, 5, 7,
-
-        // front wall
-        0, 4, 1,
-        1, 4, 5,
-
-        // rear wall
-        2, 3, 6,
-        3, 7, 6
-      ];
-
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute(
-        'position',
-        new THREE.Float32BufferAttribute(vertices, 3)
-      );
-      geometry.setIndex(indices);
-      geometry.computeVertexNormals();
-
-      const material = new THREE.MeshPhongMaterial({
-        color: 0x3399ff, // distinct blue
-        transparent: true,
-        opacity: 0.5,
-        side: THREE.DoubleSide
+      updateOLSVisibility();
+    };
+
+    function resetAllControls() {
+      // Reset zoom level to default (4x)
+      currentVScale = 4;
+      const zoomLabel = document.getElementById('zoom-value-text');
+      if (zoomLabel) zoomLabel.innerText = '4x';
+      // Set default slider values and labels
+      const defaultOpacity = {
+        IHS:20, Conical:40, OHS:20,
+        Appr:40, Appr2:40,
+        TakeOff:60, TakeOff2:60,
+        Trans:80, Trans27:80,
+        InnerAppr:40, InnerAppr2:40,
+        BLS:60, BLS2:60,
+        ITS:60, ITS2:60
+      };
+      Object.keys(defaultOpacity).forEach(key => {
+        const slider = document.getElementById('op' + key);
+        const label = document.getElementById('val' + key);
+        if (slider) slider.value = defaultOpacity[key];
+        if (label) label.innerText = defaultOpacity[key] + '%';
       });
 
-      const mesh = new THREE.Mesh(geometry, material);
-      group.add(mesh);
+      const checkboxes = document.querySelectorAll('#layer-panel input[type="checkbox"]');
+      checkboxes.forEach(chk => chk.checked = true);
 
-      // =============================
-      // BOUNDARY LINES (CLEAN)
-      // =============================
+      applyAllOpacities();
+      rebuildSurfaces();
+      updateOLSVisibility();
 
-      function addLine(points, color) {
-        group.add(new THREE.Line(
-          new THREE.BufferGeometry().setFromPoints(points),
-          new THREE.LineBasicMaterial({ color })
-        ));
-      }
+      // Collapse all groups and reset icons consistently
+      const groups = ['commonGroup','rwy09Group','rwy27Group','ofz09','ofz27'];
 
-      // top edges
-      addLine([
-        new THREE.Vector3(startX, 1, halfStart),
-        new THREE.Vector3(endX, hEnd + 1, halfEnd)
-      ], 0xffffff);
-
-      addLine([
-        new THREE.Vector3(startX, 1, -halfStart),
-        new THREE.Vector3(endX, hEnd + 1, -halfEnd)
-      ], 0xffffff);
-
-      // far edge
-      addLine([
-        new THREE.Vector3(endX, hEnd + 1, -halfEnd),
-        new THREE.Vector3(endX, hEnd + 1, halfEnd)
-      ], 0xffffff);
-
-      // base
-      addLine([
-        new THREE.Vector3(startX, 1, -halfStart),
-        new THREE.Vector3(startX, 1, halfStart)
-      ], 0x00ffcc);
-
-      // =============================
-      // LABEL
-      // =============================
-
-      if (document.getElementById('chkLabels').checked) {
-        const label = makeTextSprite(
-          'BALKED LANDING SURFACE (3.33%, 10% DIV)',
-          '#66ccff'
-        );
-        label.position.set(startX - length / 2, 60, 0);
-        group.add(label);
-      }
-
-      return group;
-    }
-
-
-    function makeTextSprite(text, color = '#ffffff') {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-
-      canvas.width = 1024;
-      canvas.height = 128;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.font = 'bold 44px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-
-      ctx.lineWidth = 8;
-      ctx.strokeStyle = 'rgba(0,0,0,0.85)';
-      ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
-
-      ctx.fillStyle = color;
-      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.needsUpdate = true;
-
-      const material = new THREE.SpriteMaterial({
-        map: texture,
-        transparent: true,
-        depthTest: false,
-        depthWrite: false
+      groups.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
       });
 
-      const sprite = new THREE.Sprite(material);
-      sprite.scale.set(900, 110, 1);
-      sprite.renderOrder = 999;
-      return sprite;
+      // Reset all +/- icons strictly based on collapsed state
+      document.querySelectorAll('.toggle-row span').forEach(icon => {
+        icon.innerText = '+';
+      });
+
+      updateRunwayGroupState('09');
+      updateRunwayGroupState('27');
+      updateCommonGroupState();
+      updateOFZGroupState('09');
+      updateOFZGroupState('27');
+      autoFitCamera();
     }
 
-    function updateScene() {
-      runwayGroup.clear();
-      olsGroup.clear();
-      ofzGroup.clear();
-      labelGroup.clear();
-
-      // Single generic aerodrome
-      createRunway();
-      olsGroup.rotation.y = 0;
-      ofzGroup.rotation.y = 0;
-
-      if (document.getElementById('chkApproach').checked) {
-        const approach = generateApproachSurface();
-        approach.position.y = 4;
-        olsGroup.add(approach);
-      }
-
-      if (document.getElementById('chkTakeoff').checked) {
-        const takeoff = generateTakeoffSurface();
-        takeoff.position.set(1350, 4, 0);
-        olsGroup.add(takeoff);
-      }
-
-      if (document.getElementById('chkTransitional').checked) {
-        const transitional = generateTransitionalSurface();
-        transitional.position.y = 4;
-        olsGroup.add(transitional);
-      }
-
-      if (document.getElementById('chkInnerHorizontal').checked) {
-        const ihs = generateInnerHorizontalSurface();
-        olsGroup.add(ihs);
-      }
-
-      if (document.getElementById('chkOuterHorizontal').checked) {
-        const outerHorizontal = generateOuterHorizontalSurface();
-        olsGroup.add(outerHorizontal);
-      }
-
-      if (document.getElementById('chkConical').checked) {
-        const conical = generateConicalSurface();
-        olsGroup.add(conical);
-      }
-
-      if (document.getElementById('chkIAS').checked) {
-        const ias = generateInnerApproachSurface();
-        ofzGroup.add(ias);
-      }
-
-      if (document.getElementById('chkITS').checked) {
-        const itsLeft = generateInnerTransitionalSurface(-1);
-        const itsRight = generateInnerTransitionalSurface(1);
-
-        itsLeft.position.y = 4;
-        itsRight.position.y = 4;
-        ofzGroup.add(itsLeft);
-        ofzGroup.add(itsRight);
-      }
-
-      if (document.getElementById('chkBLS').checked) {
-        const bls = generateBalkedLandingSurface();
-        ofzGroup.add(bls);
-      }
-
-
-
-    }
-
-
-    updateScene();
-
-    document.querySelectorAll('#ui input, #ui select').forEach(el => {
-      el.addEventListener('change', updateScene);
-    });
-
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    function animate() {
-      requestAnimationFrame(animate);
-
-      controls.update();
-
-      // --- MAIN SCENE (FULL SCREEN) ---
-      renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
-      renderer.setScissorTest(false);
-      renderer.clear();
-      renderer.render(scene, camera);
-
-      // --- AXIS VIEWPORT (BOTTOM LEFT) ---
-      const size = 150;
-
-      renderer.clearDepth(); // important
-      renderer.setScissorTest(true);
-
-      renderer.setScissor(10, 10, size, size);
-      renderer.setViewport(10, 10, size, size);
-
-      axesCamera.position.copy(camera.position);
-      axesCamera.position.sub(controls.target);
-      axesCamera.position.setLength(400);
-      axesCamera.lookAt(axesScene.position);
-
-      renderer.render(axesScene, axesCamera);
-
-      // --- RESTORE STATE ---
-      renderer.setScissorTest(false);
-    }
-
-
+    createBaseline();
+    rebuildSurfaces();
+    autoFitCamera();
+    window.addEventListener('resize', () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); });
+    function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
     animate();
   </script>
-</body>
+  <script>
+  // Collapsible section toggler (legacy, but still present for any old calls)
+  window.toggleSection = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+  };
 
+  // New: Collapsible section toggler with +/− icon on right
+  window.toggleSectionWithIcon = (id, el, event) => {
+    if (!event) return;
+
+    const target = event.target;
+
+    // If checkbox clicked → do nothing here (handled separately)
+    if (target.tagName === 'INPUT') return;
+
+    // If label text clicked → prevent checkbox toggle
+    if (target.closest('label')) {
+      event.preventDefault();
+    }
+
+    const section = document.getElementById(id);
+    if (!section) return;
+
+    const isHidden = section.style.display === 'none' || section.style.display === '';
+    section.style.display = isHidden ? 'block' : 'none';
+
+    if (el) el.innerText = isHidden ? '−' : '+';
+  };
+
+  // New: Toggle all Common Surfaces from group checkbox
+  window.toggleCommonGroup = () => {
+    const master = document.getElementById('chkCommon').checked;
+    ['chkIHS','chkConical','chkOHS'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.checked = master;
+    });
+    updateOLSVisibility();
+  };
+
+  // New: Toggle all OFZ surfaces for a runway from group checkbox
+  window.toggleOFZGroup = (rwy) => {
+    const is09 = rwy === '09';
+    const master = document.getElementById(is09 ? 'chkOFZ09' : 'chkOFZ27').checked;
+
+    const ids = is09
+      ? ['chkInnerAppr1','chkBLS1','chkITS1']
+      : ['chkInnerAppr2','chkBLS2','chkITS2'];
+
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.checked = master;
+    });
+
+    updateOLSVisibility();
+  };
+
+  // Close layer panel when clicking outside
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('layer-panel');
+  const btn = document.getElementById('layer-toggle-btn');
+
+  if (!panel || !btn) return;
+
+  const isClickInside = panel.contains(e.target) || btn.contains(e.target);
+
+  if (!isClickInside) {
+    panel.style.display = 'none';
+  }
+});
+  </script>
+  <div id="status-bar">
+    © Made by Deep Gulati  </div>
+</body>
 </html>
+
+    
