@@ -173,67 +173,110 @@
 
     #compass {
       position: absolute;
-      top: 80px;
-      right: 20px;
-      width: 70px;
-      height: 70px;
+      top: 18px;
+      right: 18px;
+      width: 100px;
+      height: 140px;
       z-index: 110;
+      pointer-events: none;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
     }
 
-    #compass-rose {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      background: rgba(20, 20, 20, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+    #north-marker {
       position: relative;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+      width: 110px;
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center center;
+      filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
     }
 
-    .dir {
+    #north-arrow {
       position: absolute;
-      font-size: 10px;
-      color: #00d4ff;
-      font-weight: bold;
-    }
-
-    .dir.n {
       top: 4px;
       left: 50%;
+      width: 72px;
+      height: 96px;
       transform: translateX(-50%);
+      filter: drop-shadow(0 3px 7px rgba(0,0,0,0.35));
+      transition: transform 0.18s ease;
     }
 
-    .dir.s {
-      bottom: 4px;
-      left: 50%;
-      transform: translateX(-50%);
+    #north-arrow svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
     }
 
-    .dir.e {
-      right: 4px;
-      top: 50%;
-      transform: translateY(-50%);
+    #north-arrow .arrow-outline {
+      fill: #063f68;
+      stroke: #04253d;
+      stroke-width: 2;
+      stroke-linejoin: round;
     }
 
-    .dir.w {
-      left: 4px;
-      top: 50%;
-      transform: translateY(-50%);
+    #north-arrow .arrow-left {
+      fill: url(#northGradLeft);
+      stroke: rgba(255,255,255,0.18);
+      stroke-width: 0.8;
     }
 
-    #compass-arrow {
+    #north-arrow .arrow-right {
+      fill: url(#northGradRight);
+      stroke: rgba(255,255,255,0.22);
+      stroke-width: 0.8;
+    }
+
+    #north-arrow .arrow-divider {
+      stroke: rgba(255,255,255,0.45);
+      stroke-width: 1.2;
+      opacity: 0.65;
+    }
+
+    #north-arrow .arrow-highlight {
+      fill: rgba(255,255,255,0.18);
+    }
+
+    #north-marker:hover #north-arrow {
+      transform: translateX(-50%) translateY(-2px);
+    }
+
+    #north-label {
       position: absolute;
-      width: 2px;
-      height: 26px;
-      background: #00d4ff;
-      top: 10px;
+      top: 60px;
       left: 50%;
-      transform-origin: bottom center;
       transform: translateX(-50%);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2.5px solid #1296d4;
+      background: radial-gradient(circle at 35% 30%, #ffffff 0%, #eef7ff 55%, #d9edf9 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 900;
+      font-family: Arial, sans-serif;
+      color: #f2f2f2;
+      text-shadow:
+        -1px -1px 0 #3f3f3f,
+         1px -1px 0 #3f3f3f,
+        -1px  1px 0 #3f3f3f,
+         1px  1px 0 #3f3f3f,
+         0 2px 3px rgba(0,0,0,0.35);
+      box-shadow:
+        0 0 10px rgba(0,0,0,0.35),
+        inset 0 0 10px rgba(255,255,255,0.55),
+        inset 0 -4px 8px rgba(0,0,0,0.08);
+      user-select: none;
     }
 
     #zoom-value-text {
-      font-size: 13px;
+      font-size: 18px;
       font-weight: 800;
       color: #fff;
     }
@@ -488,15 +531,76 @@
     </svg>
   </div>
 
-  <div id="compass">
-    <div id="compass-rose">
-      <div class="dir n">N</div>
-      <div class="dir e">E</div>
-      <div class="dir s">S</div>
-      <div class="dir w">W</div>
-      <div id="compass-arrow"></div>
+    <div id="compass">
+      <div id="north-marker">
+        <div id="north-arrow">
+          <svg viewBox="0 0 100 140" aria-hidden="true">
+
+            <defs>
+              <linearGradient id="northGradLeft" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#065d96"/>
+                <stop offset="55%" stop-color="#1296d4"/>
+                <stop offset="100%" stop-color="#7fe4ff"/>
+              </linearGradient>
+
+              <linearGradient id="northGradRight" x1="100%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stop-color="#0d78ba"/>
+                <stop offset="60%" stop-color="#67d8ff"/>
+                <stop offset="100%" stop-color="#b8f2ff"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Outer arrow silhouette -->
+            <path
+              class="arrow-outline"
+              d="M50 4
+                 L88 92
+                 L50 72
+                 L12 92
+                 Z"
+            />
+
+            <!-- Left folded face -->
+            <path
+              class="arrow-left"
+              d="M50 8
+                 L50 68
+                 L16 88
+                 Z"
+            />
+
+            <!-- Right folded face -->
+            <path
+              class="arrow-right"
+              d="M50 8
+                 L84 88
+                 L50 68
+                 Z"
+            />
+
+            <!-- Divider highlight -->
+            <line
+              class="arrow-divider"
+              x1="50"
+              y1="10"
+              x2="50"
+              y2="68"
+            />
+
+            <!-- Small glossy top highlight -->
+            <path
+              class="arrow-highlight"
+              d="M50 12
+                 L66 46
+                 L50 38
+                 Z"
+            />
+
+          </svg>
+        </div>
+        <div id="north-label">N</div>
+      </div>
     </div>
-  </div>
 
   <div id="layer-toggle-btn" onclick="toggleLayerUI()" title="Toggle Layers">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="white">
@@ -1568,7 +1672,8 @@
       }
     }
 
-    const compassArrow = document.getElementById('compass-arrow');
+    const compassArrow = document.getElementById('north-arrow');
+    const northMarker = document.getElementById('north-marker');
     controls.enableDamping = true;
     controls.enableZoom = true;
     controls.enablePan = true;
@@ -3072,7 +3177,9 @@
       if (controls.enabled) controls.update();
       if (compassArrow && controls) {
         const angle = controls.getAzimuthalAngle();
-        compassArrow.style.transform = `rotate(${-angle}rad)`;
+        //compassArrow.style.transform = `rotate(${-angle}rad)`;
+        northMarker.style.transform =
+          `rotate(${controls.getAzimuthalAngle()}rad)`;
       }
       renderer.render(scene, camera);
     }
