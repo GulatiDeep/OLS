@@ -1,371 +1,491 @@
-
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ICAO Annex-14 OLS Surface Visualiser</title>
   <style>
-  html, body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: #050505;
-    color: #fff;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-  }
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #050505;
+      color: #fff;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-  #layer-toggle-btn {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    width: 52px;
-    height: 52px;
-    background: rgba(40, 44, 52, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 110;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-    transition: all 0.2s;
-    width: 52px;
-    height: 52px;
-  }
+    #layer-toggle-btn {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 52px;
+      height: 52px;
+      background: rgba(40, 44, 52, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 110;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      transition: all 0.2s;
+      width: 52px;
+      height: 52px;
+    }
 
-  #layer-toggle-btn:hover {
-    background: rgba(60, 64, 72, 0.9);
-    border-color: #00d4ff;
-  }
-
-  #layer-panel {
-    position: absolute;
-    top: 75px;
-    left: 20px;
-    width: 280px;
-    background: rgba(15, 15, 15, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    padding: 15px;
-    z-index: 105;
-    backdrop-filter: blur(10px);
-    display: none;
-    max-height: 80vh;
-    overflow-y: auto;
-    animation: slideIn 0.2s ease-out;
-  }
-
-  #zoom-cycle-btn {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    width: 52px;
-    height: 52px;
-    background: rgba(40, 44, 52, 0.9);
-    border: 2px solid #00d4ff;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 110;
-    box-shadow: 0 0 12px rgba(0, 212, 255, 0.2);
-    transition: all 0.2s;
-    user-select: none;
-  }
-  /* Mobile Optimization */
-  @media (max-width: 768px) {
-
-    #main-title {
-      font-size: 14px;
-      top: 10px;
-      padding: 0 10px;
+    #layer-toggle-btn:hover {
+      background: rgba(60, 64, 72, 0.9);
+      border-color: #00d4ff;
     }
 
     #layer-panel {
-      width: calc(100% - 20px);
-      left: 10px;
-      top: 70px;
-      max-height: 70vh;
+      position: absolute;
+      top: 20px;
+      left: 92px;
+      width: 280px;
+      background: rgba(15, 15, 15, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 15px;
+      z-index: 105;
+      backdrop-filter: blur(10px);
+      display: none;
+      max-height: 80vh;
+      overflow-y: auto;
+      animation: slideIn 0.2s ease-out;
+    }
+
+    #zoom-cycle-btn {
+      left: 20px;
+      top: 152px;
+    }
+
+    /* Mobile Optimization */
+    @media (max-width: 768px) {
+
+      #main-title {
+        font-size: 14px;
+        top: 10px;
+        padding: 0 10px;
+      }
+
+      #layer-panel {
+        width: min(320px, calc(100% - 82px));
+        left: 72px;
+        top: 10px;
+        max-height: 70vh;
+      }
+
+      .toggle-row {
+        font-size: 15px;
+        padding: 10px;
+      }
+
+      .opacity-slider {
+        height: 8px;
+      }
+
+      #status-bar {
+        font-size: 11px;
+        height: 24px;
+        padding: 0 15px;
+      }
+
+      #layer-toggle-btn,
+      #zoom-cycle-btn,
+      #obstacle-btn {
+        width: 50px;
+        height: 50px;
+      }
+
+      #obstacle-btn {
+        left: 10px;
+        top: 70px;
+      }
+
+      #zoom-cycle-btn {
+        left: 10px;
+        top: 130px;
+      }
+    }
+
+
+    .top-control-btn {
+      position: absolute;
+      top: 20px;
+      width: 52px;
+      height: 52px;
+      background: rgba(40, 44, 52, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 110;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    .top-control-btn:hover {
+      background: rgba(60, 64, 72, 0.95);
+      border-color: #00d4ff;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55);
+    }
+
+    .top-control-btn.active {
+      background: rgba(18, 22, 28, 0.95);
+      border-color: rgba(0, 212, 255, 0.5);
+      transform: translateY(2px) scale(0.97);
+      box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.55);
+      opacity: 0.72;
+      filter: blur(0.2px);
+    }
+
+    .top-control-btn.pressed {
+      background: rgba(18, 22, 28, 0.95);
+      border-color: rgba(0, 212, 255, 0.5);
+      transform: translateY(2px) scale(0.97);
+      box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.55);
+    }
+
+    #obstacle-btn.active #obstacle-icon,
+    #obstacle-btn.pressed #obstacle-icon {
+      fill: #8a8a8a;
+    }
+
+    #obstacle-btn {
+      left: 20px;
+      top: 86px;
+    }
+
+    #zoom-cycle-btn.active #zoom-value-text {
+      color: #00d4ff;
+    }
+
+    #compass {
+      position: absolute;
+      top: 80px;
+      right: 20px;
+      width: 70px;
+      height: 70px;
+      z-index: 110;
+    }
+
+    #compass-rose {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: rgba(20, 20, 20, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      position: relative;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+    }
+
+    .dir {
+      position: absolute;
+      font-size: 10px;
+      color: #00d4ff;
+      font-weight: bold;
+    }
+
+    .dir.n {
+      top: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .dir.s {
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .dir.e {
+      right: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .dir.w {
+      left: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    #compass-arrow {
+      position: absolute;
+      width: 2px;
+      height: 26px;
+      background: #00d4ff;
+      top: 10px;
+      left: 50%;
+      transform-origin: bottom center;
+      transform: translateX(-50%);
+    }
+
+    #zoom-value-text {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    #zoom-cycle-btn:hover #zoom-value-text {
+      color: #00d4ff;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    h2 {
+      margin: 0 0 12px 0;
+      font-size: 14px;
+      color: #00d4ff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .layer-group {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 14px;
     }
 
     .toggle-row {
-      font-size: 15px;
-      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #eee;
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 6px;
+      padding: 6px 8px;
+      transition: background 0.2s;
+    }
+
+    .toggle-row:hover {
+      background: rgba(0, 212, 255, 0.08);
+    }
+
+    .toggle-row label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      flex-grow: 1;
+      font-weight: 500;
+    }
+
+    .toggle-row span {
+      font-weight: bold;
+      font-size: 14px;
+      color: #00d4ff;
+    }
+
+    .toggle-row input[type="checkbox"] {
+      margin-right: 10px;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    /* Color-coded checkboxes (acts as legend) */
+    #chkIHS {
+      accent-color: #00ffff;
+    }
+
+    #chkConical {
+      accent-color: #ffa500;
+    }
+
+    #chkOHS {
+      accent-color: #9933ff;
+    }
+
+    #chkAppr1,
+    #chkAppr2 {
+      accent-color: #00ff00;
+    }
+
+    /* neon green */
+    #chkTakeOff1,
+    #chkTakeOff2 {
+      accent-color: #ff00ff;
+    }
+
+    /* magenta */
+    #chkTrans09,
+    #chkTrans27 {
+      accent-color: #0077ff;
+    }
+
+    /* deep blue */
+
+    #chkInnerAppr1,
+    #chkInnerAppr2 {
+      accent-color: #00ffff;
+    }
+
+    /* cyan */
+    #chkBLS1,
+    #chkBLS2 {
+      accent-color: #ff0000;
+    }
+
+    /* red */
+    #chkITS1,
+    #chkITS2 {
+      accent-color: #ffff00;
+    }
+
+    /* bright yellow */
+
+    /* Group checkboxes (neutral color) */
+    #chkCommon,
+    #chkRwy09,
+    #chkRwy27,
+    #chkOFZ09,
+    #chkOFZ27 {
+      accent-color: #00d4ff;
+    }
+
+    .opacity-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.25);
+      padding: 6px 8px;
+      border-radius: 6px;
+      margin-bottom: 8px;
     }
 
     .opacity-slider {
-      height: 8px;
+      flex-grow: 1;
+      height: 5px;
+      border-radius: 2px;
+      -webkit-appearance: none;
+      appearance: none;
+      background: linear-gradient(90deg, #00d4ff, #0077ff);
+      outline: none;
+      cursor: pointer;
     }
 
-    #status-bar {
+    .opacity-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 12px;
+      height: 12px;
+      background: #00d4ff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .opacity-slider::-moz-range-thumb {
+      width: 12px;
+      height: 12px;
+      background: #00d4ff;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .opacity-value {
+      color: #00d4ff;
+      font-weight: bold;
+      font-size: 12px;
+      width: 35px;
+      text-align: right;
+      font-family: monospace;
+    }
+
+    .section-header {
+      font-weight: bold;
       font-size: 11px;
-      height: 24px;
+      color: #00d4ff;
+      margin-bottom: 8px;
+      display: block;
+      letter-spacing: 0.5px;
+    }
+
+    h2 {
+      margin: 0 0 12px 0;
+      font-size: 14px;
+      color: #00d4ff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+      padding-bottom: 6px;
+    }
+
+
+    /* Center Heading */
+    #main-title {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 20px;
+      font-weight: bold;
+      color: #00d4ff;
+      letter-spacing: 1px;
+      text-align: center;
+      z-index: 100;
+      pointer-events: none;
+    }
+
+    /* Status Bar */
+    #status-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 28px;
+      background: rgba(20, 20, 20, 0.95);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
       padding: 0 15px;
+      font-size: 12px;
+      color: #aaa;
+      z-index: 100;
+      box-sizing: border-box;
+      overflow: hidden;
+      white-space: nowrap;
     }
-
-    #layer-toggle-btn,
-    #zoom-cycle-btn {
-      width: 50px;
-      height: 50px;
-    }
-  }
-
-  #zoom-cycle-btn:hover {
-    background: #00d4ff;
-    transform: scale(1.08);
-  }
-
-  #compass {
-    position: absolute;
-    top: 80px;
-    right: 20px;
-    width: 70px;
-    height: 70px;
-    z-index: 110;
-  }
-
-  #compass-rose {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    background: rgba(20,20,20,0.9);
-    border: 1px solid rgba(255,255,255,0.2);
-    position: relative;
-    box-shadow: 0 0 10px rgba(0,0,0,0.6);
-  }
-
-  .dir {
-    position: absolute;
-    font-size: 10px;
-    color: #00d4ff;
-    font-weight: bold;
-  }
-
-  .dir.n { top: 4px; left: 50%; transform: translateX(-50%); }
-  .dir.s { bottom: 4px; left: 50%; transform: translateX(-50%); }
-  .dir.e { right: 4px; top: 50%; transform: translateY(-50%); }
-  .dir.w { left: 4px; top: 50%; transform: translateY(-50%); }
-
-  #compass-arrow {
-    position: absolute;
-    width: 2px;
-    height: 26px;
-    background: #00d4ff;
-    top: 10px;
-    left: 50%;
-    transform-origin: bottom center;
-    transform: translateX(-50%);
-  }
-
-  #zoom-value-text {
-    font-size: 13px;
-    font-weight: 800;
-    color: #fff;
-  }
-
-  #zoom-cycle-btn:hover #zoom-value-text {
-    color: #000;
-  }
-
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-
-  h2 {
-    margin: 0 0 12px 0;
-    font-size: 14px;
-    color: #00d4ff;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-
-  .layer-group {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 10px;
-    padding: 10px;
-    margin-bottom: 14px;
-  }
-
-  .toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 13px;
-    color: #eee;
-    margin-bottom: 8px;
-    background: rgba(255,255,255,0.02);
-    border-radius: 6px;
-    padding: 6px 8px;
-    transition: background 0.2s;
-  }
-
-  .toggle-row:hover {
-    background: rgba(0,212,255,0.08);
-  }
-
-  .toggle-row label {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    flex-grow: 1;
-    font-weight: 500;
-  }
-
-  .toggle-row span {
-    font-weight: bold;
-    font-size: 14px;
-    color: #00d4ff;
-  }
-
-  .toggle-row input[type="checkbox"] {
-    margin-right: 10px;
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
-  }
-
-  /* Color-coded checkboxes (acts as legend) */
-  #chkIHS { accent-color: #00ffff; }
-  #chkConical { accent-color: #ffa500; }
-  #chkOHS { accent-color: #9933ff; }
-
-  #chkAppr1, #chkAppr2 { accent-color: #00ff00; }          /* neon green */
-  #chkTakeOff1, #chkTakeOff2 { accent-color: #ff00ff; }    /* magenta */
-  #chkTrans09, #chkTrans27 { accent-color: #0077ff; }      /* deep blue */
-
-  #chkInnerAppr1, #chkInnerAppr2 { accent-color: #00ffff; } /* cyan */
-  #chkBLS1, #chkBLS2 { accent-color: #ff0000; }            /* red */
-  #chkITS1, #chkITS2 { accent-color: #ffff00; }            /* bright yellow */
-
-  /* Group checkboxes (neutral color) */
-  #chkCommon, #chkRwy09, #chkRwy27, #chkOFZ09, #chkOFZ27 {
-    accent-color: #00d4ff;
-  }
-
-  .opacity-container {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(0,0,0,0.25);
-    padding: 6px 8px;
-    border-radius: 6px;
-    margin-bottom: 8px;
-  }
-
-  .opacity-slider {
-    flex-grow: 1;
-    height: 5px;
-    border-radius: 2px;
-    -webkit-appearance: none;
-    appearance: none;
-    background: linear-gradient(90deg, #00d4ff, #0077ff);
-    outline: none;
-    cursor: pointer;
-  }
-
-  .opacity-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 12px;
-    height: 12px;
-    background: #00d4ff;
-    border-radius: 50%;
-    cursor: pointer;
-  }
-
-  .opacity-slider::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
-    background: #00d4ff;
-    border-radius: 50%;
-    cursor: pointer;
-  }
-
-  .opacity-value {
-    color: #00d4ff;
-    font-weight: bold;
-    font-size: 12px;
-    width: 35px;
-    text-align: right;
-    font-family: monospace;
-  }
-
-  .section-header {
-    font-weight: bold;
-    font-size: 11px;
-    color: #00d4ff;
-    margin-bottom: 8px;
-    display: block;
-    letter-spacing: 0.5px;
-  }
-
-  h2 {
-    margin: 0 0 12px 0;
-    font-size: 14px;
-    color: #00d4ff;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border-bottom: 1px solid rgba(0,212,255,0.2);
-    padding-bottom: 6px;
-  }
-
-
-  /* Center Heading */
-  #main-title {
-    position: absolute;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 20px;
-    font-weight: bold;
-    color: #00d4ff;
-    letter-spacing: 1px;
-    text-align: center;
-    z-index: 100;
-    pointer-events: none;
-  }
-
-  /* Status Bar */
-  #status-bar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 28px;
-    background: rgba(20, 20, 20, 0.95);
-    border-top: 1px solid rgba(255,255,255,0.1);
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 0 15px;
-    font-size: 12px;
-    color: #aaa;
-    z-index: 100;
-    box-sizing: border-box;
-    overflow: hidden;
-    white-space: nowrap;
-  }
   </style>
 </head>
+
 <body>
   <div id="main-title">ICAO Annex-14 OLS Surface Visualiser</div>
 
-  <div id="zoom-cycle-btn" onclick="cycleVScale()" title="Toggle Vertical Scaling">
+  <div id="zoom-cycle-btn" class="top-control-btn" onclick="cycleVScale()" title="Toggle Vertical Scaling">
     <span id="zoom-value-text">4x</span>
+  </div>
+
+  <div id="obstacle-btn" class="top-control-btn" onclick="activateObstacleMode()" title="Place Obstacle">
+    <svg id="obstacle-icon" viewBox="0 0 24 24" width="24" height="24" fill="#ff4d4d">
+      <path
+        d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z" />
+    </svg>
   </div>
 
   <div id="compass">
@@ -379,13 +499,17 @@
   </div>
 
   <div id="layer-toggle-btn" onclick="toggleLayerUI()" title="Toggle Layers">
-    <svg viewBox="0 0 24 24" width="20" height="20" fill="white"><path d="M12,16L19.36,10.27L21,9L12,2L3,9L4.63,10.27M12,18.54L4.62,12.81L3,14.07L12,21.07L21,14.07L19.37,12.81L12,18.54Z" /></svg>
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="white">
+      <path
+        d="M12,16L19.36,10.27L21,9L12,2L3,9L4.63,10.27M12,18.54L4.62,12.81L3,14.07L12,21.07L21,14.07L19.37,12.81L12,18.54Z" />
+    </svg>
   </div>
-  
+
   <div id="layer-panel">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px;">
       <h2 style="margin:0;">OLS Layers</h2>
-      <button onclick="resetAllControls()" style="background:#00d4ff; color:#000; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:bold; white-space:nowrap;">
+      <button onclick="resetAllControls()"
+        style="background:#00d4ff; color:#000; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-weight:bold; white-space:nowrap;">
         Reset
       </button>
     </div>
@@ -399,53 +523,67 @@
         <span style="cursor:pointer; margin-left:auto;">+</span>
       </div>
 
-      <div id="commonGroup" style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
-        <div class="toggle-row"><label><input type="checkbox" id="chkIHS" checked onchange="updateOLSVisibility()"> Inner Horizontal Surface</label></div>
+      <div id="commonGroup"
+        style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
+        <div class="toggle-row"><label><input type="checkbox" id="chkIHS" checked onchange="updateOLSVisibility()">
+            Inner Horizontal Surface</label></div>
         <div class="opacity-container">
-          <input type="range" id="opIHS" class="opacity-slider" min="0" max="100" value="20" oninput="updateOpacity('IHS')">
+          <input type="range" id="opIHS" class="opacity-slider" min="0" max="100" value="20"
+            oninput="updateOpacity('IHS')">
           <span id="valIHS" class="opacity-value">20%</span>
         </div>
 
-        <div class="toggle-row"><label><input type="checkbox" id="chkConical" checked onchange="updateOLSVisibility()"> Conical Surface</label></div>
+        <div class="toggle-row"><label><input type="checkbox" id="chkConical" checked onchange="updateOLSVisibility()">
+            Conical Surface</label></div>
         <div class="opacity-container">
-          <input type="range" id="opConical" class="opacity-slider" min="0" max="100" value="40" oninput="updateOpacity('Conical')">
+          <input type="range" id="opConical" class="opacity-slider" min="0" max="100" value="40"
+            oninput="updateOpacity('Conical')">
           <span id="valConical" class="opacity-value">40%</span>
         </div>
 
-        <div class="toggle-row"><label><input type="checkbox" id="chkOHS" checked onchange="updateOLSVisibility()"> Outer Horizontal Surface</label></div>
+        <div class="toggle-row"><label><input type="checkbox" id="chkOHS" checked onchange="updateOLSVisibility()">
+            Outer Horizontal Surface</label></div>
         <div class="opacity-container">
-          <input type="range" id="opOHS" class="opacity-slider" min="0" max="100" value="20" oninput="updateOpacity('OHS')">
+          <input type="range" id="opOHS" class="opacity-slider" min="0" max="100" value="20"
+            oninput="updateOpacity('OHS')">
           <span id="valOHS" class="opacity-value">20%</span>
         </div>
       </div>
     </div>
 
     <!-- RUNWAY 09 -->
-      <div class="layer-group">
-        <div class="toggle-row" onclick="toggleSectionWithIcon('rwy09Group', this.querySelector('span'), event)">
-          <label style="cursor:pointer;">
-            <input type="checkbox" id="chkRwy09" checked onchange="toggleRunwayGroup('09')"> Runway 09
-          </label>
-          <span style="cursor:pointer; margin-left:auto;">+</span>
-        </div>
+    <div class="layer-group">
+      <div class="toggle-row" onclick="toggleSectionWithIcon('rwy09Group', this.querySelector('span'), event)">
+        <label style="cursor:pointer;">
+          <input type="checkbox" id="chkRwy09" checked onchange="toggleRunwayGroup('09')"> Runway 09
+        </label>
+        <span style="cursor:pointer; margin-left:auto;">+</span>
+      </div>
 
-      <div id="rwy09Group" style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
-        
-        <div class="toggle-row"><label><input type="checkbox" id="chkAppr1" checked onchange="updateOLSVisibility()"> Approach Surface</label></div>
+      <div id="rwy09Group"
+        style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
+
+        <div class="toggle-row"><label><input type="checkbox" id="chkAppr1" checked onchange="updateOLSVisibility()">
+            Approach Surface</label></div>
         <div class="opacity-container">
-          <input type="range" id="opAppr" class="opacity-slider" min="0" max="100" value="40" oninput="updateOpacity('Appr')">
+          <input type="range" id="opAppr" class="opacity-slider" min="0" max="100" value="40"
+            oninput="updateOpacity('Appr')">
           <span id="valAppr" class="opacity-value">40%</span>
         </div>
 
-        <div class="toggle-row"><label><input type="checkbox" id="chkTakeOff1" checked onchange="updateOLSVisibility()"> Take-off Surface</label></div>
+        <div class="toggle-row"><label><input type="checkbox" id="chkTakeOff1" checked onchange="updateOLSVisibility()">
+            Take-off Surface</label></div>
         <div class="opacity-container">
-          <input type="range" id="opTakeOff" class="opacity-slider" min="0" max="100" value="60" oninput="updateOpacity('TakeOff')">
+          <input type="range" id="opTakeOff" class="opacity-slider" min="0" max="100" value="60"
+            oninput="updateOpacity('TakeOff')">
           <span id="valTakeOff" class="opacity-value">60%</span>
         </div>
 
-        <div class="toggle-row"><label><input type="checkbox" id="chkTrans09" checked onchange="updateOLSVisibility()"> Transitional Surface</label></div>
+        <div class="toggle-row"><label><input type="checkbox" id="chkTrans09" checked onchange="updateOLSVisibility()">
+            Transitional Surface</label></div>
         <div class="opacity-container">
-          <input type="range" id="opTrans" class="opacity-slider" min="0" max="100" value="80" oninput="updateOpacity('Trans')">
+          <input type="range" id="opTrans" class="opacity-slider" min="0" max="100" value="80"
+            oninput="updateOpacity('Trans')">
           <span id="valTrans" class="opacity-value">80%</span>
         </div>
 
@@ -457,22 +595,29 @@
           <span style="cursor:pointer; margin-left:auto;">+</span>
         </div>
 
-        <div id="ofz09" style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
-          <div class="toggle-row"><label><input type="checkbox" id="chkInnerAppr1" checked onchange="updateOLSVisibility()"> Inner Approach Surface</label></div>
+        <div id="ofz09"
+          style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
+          <div class="toggle-row"><label><input type="checkbox" id="chkInnerAppr1" checked
+                onchange="updateOLSVisibility()"> Inner Approach Surface</label></div>
           <div class="opacity-container">
-            <input type="range" id="opInnerAppr" class="opacity-slider" min="0" max="100" value="40" oninput="updateOpacity('InnerAppr')">
+            <input type="range" id="opInnerAppr" class="opacity-slider" min="0" max="100" value="40"
+              oninput="updateOpacity('InnerAppr')">
             <span id="valInnerAppr" class="opacity-value">40%</span>
           </div>
 
-          <div class="toggle-row"><label><input type="checkbox" id="chkBLS1" checked onchange="updateOLSVisibility()"> Balked Landing Surface</label></div>
+          <div class="toggle-row"><label><input type="checkbox" id="chkBLS1" checked onchange="updateOLSVisibility()">
+              Balked Landing Surface</label></div>
           <div class="opacity-container">
-            <input type="range" id="opBLS" class="opacity-slider" min="0" max="100" value="60" oninput="updateOpacity('BLS')">
+            <input type="range" id="opBLS" class="opacity-slider" min="0" max="100" value="60"
+              oninput="updateOpacity('BLS')">
             <span id="valBLS" class="opacity-value">60%</span>
           </div>
 
-          <div class="toggle-row"><label><input type="checkbox" id="chkITS1" checked onchange="updateOLSVisibility()"> Inner Transitional Surface</label></div>
+          <div class="toggle-row"><label><input type="checkbox" id="chkITS1" checked onchange="updateOLSVisibility()">
+              Inner Transitional Surface</label></div>
           <div class="opacity-container">
-            <input type="range" id="opITS" class="opacity-slider" min="0" max="100" value="60" oninput="updateOpacity('ITS')">
+            <input type="range" id="opITS" class="opacity-slider" min="0" max="100" value="60"
+              oninput="updateOpacity('ITS')">
             <span id="valITS" class="opacity-value">60%</span>
           </div>
         </div>
@@ -481,31 +626,38 @@
     </div>
 
     <!-- RUNWAY 27 -->
-      <div class="layer-group">
-        <div class="toggle-row" onclick="toggleSectionWithIcon('rwy27Group', this.querySelector('span'), event)">
-          <label style="cursor:pointer;">
-            <input type="checkbox" id="chkRwy27" checked onchange="toggleRunwayGroup('27')"> Runway 27
-          </label>
-          <span style="cursor:pointer; margin-left:auto;">+</span>
-        </div>
+    <div class="layer-group">
+      <div class="toggle-row" onclick="toggleSectionWithIcon('rwy27Group', this.querySelector('span'), event)">
+        <label style="cursor:pointer;">
+          <input type="checkbox" id="chkRwy27" checked onchange="toggleRunwayGroup('27')"> Runway 27
+        </label>
+        <span style="cursor:pointer; margin-left:auto;">+</span>
+      </div>
 
-      <div id="rwy27Group" style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
-        
-        <div class="toggle-row"><label><input type="checkbox" id="chkAppr2" checked onchange="updateOLSVisibility()"> Approach Surface</label></div>
+      <div id="rwy27Group"
+        style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
+
+        <div class="toggle-row"><label><input type="checkbox" id="chkAppr2" checked onchange="updateOLSVisibility()">
+            Approach Surface</label></div>
         <div class="opacity-container">
-          <input type="range" id="opAppr2" class="opacity-slider" min="0" max="100" value="40" oninput="updateOpacity('Appr2')">
+          <input type="range" id="opAppr2" class="opacity-slider" min="0" max="100" value="40"
+            oninput="updateOpacity('Appr2')">
           <span id="valAppr2" class="opacity-value">40%</span>
         </div>
 
-        <div class="toggle-row"><label><input type="checkbox" id="chkTakeOff2" checked onchange="updateOLSVisibility()"> Take-off Surface</label></div>
+        <div class="toggle-row"><label><input type="checkbox" id="chkTakeOff2" checked onchange="updateOLSVisibility()">
+            Take-off Surface</label></div>
         <div class="opacity-container">
-          <input type="range" id="opTakeOff2" class="opacity-slider" min="0" max="100" value="60" oninput="updateOpacity('TakeOff2')">
+          <input type="range" id="opTakeOff2" class="opacity-slider" min="0" max="100" value="60"
+            oninput="updateOpacity('TakeOff2')">
           <span id="valTakeOff2" class="opacity-value">60%</span>
         </div>
 
-        <div class="toggle-row"><label><input type="checkbox" id="chkTrans27" checked onchange="updateOLSVisibility()"> Transitional Surface</label></div>
+        <div class="toggle-row"><label><input type="checkbox" id="chkTrans27" checked onchange="updateOLSVisibility()">
+            Transitional Surface</label></div>
         <div class="opacity-container">
-          <input type="range" id="opTrans27" class="opacity-slider" min="0" max="100" value="80" oninput="updateOpacity('Trans27')">
+          <input type="range" id="opTrans27" class="opacity-slider" min="0" max="100" value="80"
+            oninput="updateOpacity('Trans27')">
           <span id="valTrans27" class="opacity-value">80%</span>
         </div>
 
@@ -517,22 +669,29 @@
           <span style="cursor:pointer; margin-left:auto;">+</span>
         </div>
 
-        <div id="ofz27" style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
-          <div class="toggle-row"><label><input type="checkbox" id="chkInnerAppr2" checked onchange="updateOLSVisibility()"> Inner Approach Surface</label></div>
+        <div id="ofz27"
+          style="display:none; margin-left:10px; border-left:2px solid rgba(0,212,255,0.2); padding-left:8px;">
+          <div class="toggle-row"><label><input type="checkbox" id="chkInnerAppr2" checked
+                onchange="updateOLSVisibility()"> Inner Approach Surface</label></div>
           <div class="opacity-container">
-            <input type="range" id="opInnerAppr2" class="opacity-slider" min="0" max="100" value="40" oninput="updateOpacity('InnerAppr2')">
+            <input type="range" id="opInnerAppr2" class="opacity-slider" min="0" max="100" value="40"
+              oninput="updateOpacity('InnerAppr2')">
             <span id="valInnerAppr2" class="opacity-value">40%</span>
           </div>
 
-          <div class="toggle-row"><label><input type="checkbox" id="chkBLS2" checked onchange="updateOLSVisibility()"> Balked Landing Surface</label></div>
+          <div class="toggle-row"><label><input type="checkbox" id="chkBLS2" checked onchange="updateOLSVisibility()">
+              Balked Landing Surface</label></div>
           <div class="opacity-container">
-            <input type="range" id="opBLS2" class="opacity-slider" min="0" max="100" value="60" oninput="updateOpacity('BLS2')">
+            <input type="range" id="opBLS2" class="opacity-slider" min="0" max="100" value="60"
+              oninput="updateOpacity('BLS2')">
             <span id="valBLS2" class="opacity-value">60%</span>
           </div>
 
-          <div class="toggle-row"><label><input type="checkbox" id="chkITS2" checked onchange="updateOLSVisibility()"> Inner Transitional Surface</label></div>
+          <div class="toggle-row"><label><input type="checkbox" id="chkITS2" checked onchange="updateOLSVisibility()">
+              Inner Transitional Surface</label></div>
           <div class="opacity-container">
-            <input type="range" id="opITS2" class="opacity-slider" min="0" max="100" value="60" oninput="updateOpacity('ITS2')">
+            <input type="range" id="opITS2" class="opacity-slider" min="0" max="100" value="60"
+              oninput="updateOpacity('ITS2')">
             <span id="valITS2" class="opacity-value">60%</span>
           </div>
         </div>
@@ -549,15 +708,15 @@
       runway: { length: 3000, width: 45 },
       strip: { width: 280, extension: 60 },
       ihs: { radius: 4000, height: 45, opacity: 0.25 },
-      conical: { slope: 0.05, extension: 2100, startHeight: 45, endHeight: 150, opacity: 0.35 }, 
+      conical: { slope: 0.05, extension: 2100, startHeight: 45, endHeight: 150, opacity: 0.35 },
       ohs: { radius: 15000, height: 150, opacity: 0.15 },
       transitional: { slope: 0.143, opacity: 0.5 },
       innerTransitional: { slope: 0.143, maxHeight: 45, opacity: 0.55 },
       takeoff: { innerEdge: 180, distFromEnd: 60, divergence: 0.125, slope: 0.02, length: 15000, finalWidthLimit: 1800, opacity: 0.4 },
-      approach: { 
-          innerEdge: 280, distFromThreshold: 60, divergence: 0.15, 
-          seg1Len: 3000, seg1Slope: 0.02, seg2Len: 3600, seg2Slope: 0.025, seg3Len: 8400, seg3Slope: 0.0, 
-          opacity: 0.3 
+      approach: {
+        innerEdge: 280, distFromThreshold: 60, divergence: 0.15,
+        seg1Len: 3000, seg1Slope: 0.02, seg2Len: 3600, seg2Slope: 0.025, seg3Len: 8400, seg3Slope: 0.0,
+        opacity: 0.3
       },
       innerApproach: { innerEdge: 120, distFromThreshold: 60, length: 900, slope: 0.02, opacity: 0.6 },
       // Balked Landing: Starts 1800m after threshold. Ends at IHS (45m high).
@@ -571,10 +730,10 @@
 
     const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000000);
     camera.position.set(0, 40000, 20000);
-    
+
     const isMobile = /Mobi|Android/i.test(navigator.userAgent);
 
-    const renderer = new THREE.WebGLRenderer({ 
+    const renderer = new THREE.WebGLRenderer({
       antialias: !isMobile,
       logarithmicDepthBuffer: true,
       powerPreference: "high-performance"
@@ -598,6 +757,817 @@
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
 
+    let obstacleMode = false;
+    let obstacleJustActivated = false;
+    let obstacleMesh = null;
+    let obstacleLabel = null;
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    window.activateObstacleMode = () => {
+      // Toggle OFF if obstacle placement mode is active
+      if (obstacleMode) {
+        obstacleMode = false;
+        obstacleJustActivated = false;
+        controls.enabled = true;
+        if (obstacleMesh) obstacleMesh.visible = false;
+
+        const obstacleBtn = document.getElementById('obstacle-btn');
+        if (obstacleBtn) {
+          obstacleBtn.classList.remove('active');
+          obstacleBtn.classList.remove('pressed');
+        }
+
+        if (obstacleLabel) {
+          obstacleLabel.remove();
+          obstacleLabel = null;
+        }
+
+        if (obstacleMesh) {
+          scene.remove(obstacleMesh);
+          obstacleMesh = null;
+        }
+
+        return;
+      }
+
+      obstacleMode = true;
+      obstacleJustActivated = true;
+
+      const obstacleBtn = document.getElementById('obstacle-btn');
+      if (obstacleBtn) {
+        obstacleBtn.classList.add('active');
+        obstacleBtn.classList.add('pressed');
+      }
+
+      controls.enabled = false;
+
+      // Remove existing analysis label and obstacle marker
+      if (obstacleLabel) {
+        obstacleLabel.remove();
+        obstacleLabel = null;
+      }
+
+      if (obstacleMesh) {
+        scene.remove(obstacleMesh);
+        obstacleMesh = null;
+      }
+
+      if (!obstacleMesh) {
+
+        obstacleMesh = new THREE.Group();
+
+        // --- Smooth spherical teardrop marker ---
+        const pinShape = new THREE.Shape();
+
+        pinShape.moveTo(0, 130);
+
+        pinShape.bezierCurveTo(85, 130, 120, 65, 120, -5);
+        pinShape.bezierCurveTo(120, -85, 60, -145, 0, -260);
+        pinShape.bezierCurveTo(-60, -145, -120, -85, -120, -5);
+        pinShape.bezierCurveTo(-120, 65, -85, 130, 0, 130);
+
+        const lathePoints = pinShape.getPoints(80).map(p =>
+          new THREE.Vector2(Math.abs(p.x), p.y)
+        );
+
+        const pinGeo = new THREE.LatheGeometry(lathePoints, 96);
+
+        const pinMat = new THREE.MeshPhongMaterial({
+          color: 0xff2d2d,
+          shininess: 180,
+          emissive: 0x250000,
+          specular: 0xffffff
+        });
+
+        const pinMesh = new THREE.Mesh(pinGeo, pinMat);
+
+        // Keep perfectly vertical
+        pinMesh.rotation.x = 0;
+        pinMesh.rotation.z = 0;
+
+        // Position so pointed tip touches ground
+        pinMesh.position.set(0, 260, 0);
+
+        obstacleMesh.add(pinMesh);
+
+        // --- Ground shadow ---
+        const shadowGeo = new THREE.CircleGeometry(55, 40);
+
+        const shadowMat = new THREE.MeshBasicMaterial({
+          color: 0x000000,
+          transparent: true,
+          opacity: 0.22
+        });
+
+        const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+
+        shadow.rotation.x = -Math.PI / 2;
+        shadow.position.y = 0.5;
+        shadow.scale.set(0.9, 0.9, 0.9);
+
+        obstacleMesh.add(shadow);
+
+        scene.add(obstacleMesh);
+      }
+
+      if (obstacleMesh) {
+        obstacleMesh.visible = true;
+      }
+
+      // allow movement before click finalizes
+      setTimeout(() => {
+        obstacleJustActivated = false;
+      }, 200);
+    };
+
+    window.addEventListener('pointermove', (event) => {
+      if (!obstacleMode || !obstacleMesh) return;
+
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+
+      const intersectPoint = new THREE.Vector3();
+      raycaster.ray.intersectPlane(groundPlane, intersectPoint);
+
+      if (intersectPoint) {
+        obstacleMesh.position.copy(intersectPoint);
+        obstacleMesh.position.y = 0;
+      }
+    });
+
+    window.addEventListener('pointerdown', (event) => {
+      if (!obstacleMode || !obstacleMesh) return;
+      const obstacleBtn = document.getElementById('obstacle-btn');
+      if (obstacleJustActivated) return;
+
+      // If obstacle button is clicked again while placement mode is active,
+      // pointerdown can fire on the button itself. Ignore UI clicks.
+      const clickedButton = event.target.closest('#obstacle-btn');
+      const clickedLayerPanel = event.target.closest('#layer-panel');
+      const clickedLayerBtn = event.target.closest('#layer-toggle-btn');
+      const clickedZoomBtn = event.target.closest('#zoom-cycle-btn');
+
+      if (clickedButton || clickedLayerPanel || clickedLayerBtn || clickedZoomBtn) {
+        return;
+      }
+
+      obstacleMode = false;
+      controls.enabled = true;
+      obstacleJustActivated = false;
+
+      if (obstacleBtn) {
+        obstacleBtn.classList.remove('active');
+        obstacleBtn.classList.remove('pressed');
+      }
+
+      showObstacleAnalysis();
+    });
+
+    function showObstacleAnalysis() {
+      const x = obstacleMesh.position.x;
+      const z = obstacleMesh.position.z;
+
+      // Remove previous label if exists
+      if (obstacleLabel) {
+        obstacleLabel.remove();
+        obstacleLabel = null;
+      }
+
+      let surfaces = [];
+
+      // --- New helper for surface results ---
+      const surfaceResults = [];
+
+      const surfaceDisplayNames = {
+        'IHS': 'Inner Horizontal Surface',
+        'Conical': 'Conical Surface',
+        'OHS': 'Outer Horizontal Surface',
+        'Transitional RWY 09': 'Transitional Surface RWY 09',
+        'Transitional RWY 27': 'Transitional Surface RWY 27',
+        'Approach 09': 'Approach Surface RWY 09',
+        'Approach 27': 'Approach Surface RWY 27',
+        'Take-off 09': 'Take-off Surface RWY 09',
+        'Take-off 27': 'Take-off Surface RWY 27',
+        'Inner Approach RWY 09': 'Inner Approach Surface RWY 09',
+        'Inner Approach RWY 27': 'Inner Approach Surface RWY 27',
+        'Balked Landing RWY 09': 'Balked Landing Surface RWY 09',
+        'Balked Landing RWY 27': 'Balked Landing Surface RWY 27',
+        'Inner Transitional RWY 09': 'Inner Transitional Surface RWY 09',
+        'Inner Transitional RWY 27': 'Inner Transitional Surface RWY 27'
+      };
+
+      const addSurfaceResult = (name, height) => {
+        surfaceResults.push({
+          name: surfaceDisplayNames[name] || name,
+          height: Math.max(0, height)
+        });
+      };
+
+      const rHalf = CONFIG.runway.length / 2;
+      const dx = Math.max(Math.abs(x) - rHalf, 0);
+      const distFromCenter = Math.sqrt(dx * dx + z * z);
+
+      // --- Runway Strip Restriction ---
+      const stripHalf = CONFIG.strip.width / 2;
+      const insideRunwayStrip = (
+        Math.abs(x) <= (rHalf + CONFIG.strip.extension) &&
+        Math.abs(z) <= stripHalf
+      );
+
+      const insideRunway = (
+        Math.abs(x) <= rHalf &&
+        Math.abs(z) <= (CONFIG.runway.width / 2)
+      );
+
+      let obstacleInOFZ = false;
+
+      // --- IHS planform ---
+      if (distFromCenter <= CONFIG.ihs.radius) {
+        addSurfaceResult('IHS', CONFIG.ihs.height);
+      }
+
+      // --- Conical planform ---
+      if (distFromCenter > CONFIG.ihs.radius && distFromCenter <= CONFIG.ihs.radius + CONFIG.conical.extension) {
+        const conicalDist = distFromCenter - CONFIG.ihs.radius;
+        const permittedHeight = CONFIG.conical.startHeight + (conicalDist * CONFIG.conical.slope);
+        addSurfaceResult('Conical', Math.min(permittedHeight, CONFIG.conical.endHeight));
+      }
+
+      // --- OHS planform ---
+      if (distFromCenter <= CONFIG.ohs.radius) {
+        addSurfaceResult('OHS', CONFIG.ohs.height);
+      }
+
+      // --- Transitional planform ---
+      const transitionWidth = CONFIG.ihs.height / CONFIG.transitional.slope;
+
+      // Alongside runway strip
+      const insideStripLength = Math.abs(x) <= (rHalf + CONFIG.strip.extension);
+      const lateralDist = Math.abs(z) - stripHalf;
+
+      let insideTransitional = false;
+
+      if (
+        insideStripLength &&
+        lateralDist >= 0 &&
+        lateralDist <= transitionWidth
+      ) {
+        insideTransitional = true;
+      }
+
+      // Alongside RWY 09 approach (negative X side)
+      if (x < -rHalf) {
+        const dist = (-rHalf - x) - CONFIG.approach.distFromThreshold;
+
+        if (dist > 0) {
+          const apprHalfWidth =
+            (CONFIG.approach.innerEdge / 2) +
+            dist * CONFIG.approach.divergence;
+
+          const transOuter = apprHalfWidth + transitionWidth;
+
+          if (
+            Math.abs(z) >= apprHalfWidth &&
+            Math.abs(z) <= transOuter
+          ) {
+            const permittedHeight = (Math.abs(z) - apprHalfWidth) * CONFIG.transitional.slope;
+            addSurfaceResult('Transitional RWY 09', Math.min(permittedHeight, CONFIG.ihs.height));
+            insideTransitional = true;
+          }
+        }
+      }
+
+      // Alongside RWY 27 approach (positive X side)
+      if (x > rHalf) {
+        const dist = (x - rHalf) - CONFIG.approach.distFromThreshold;
+
+        if (dist > 0) {
+          const apprHalfWidth =
+            (CONFIG.approach.innerEdge / 2) +
+            dist * CONFIG.approach.divergence;
+
+          const transOuter = apprHalfWidth + transitionWidth;
+
+          if (
+            Math.abs(z) >= apprHalfWidth &&
+            Math.abs(z) <= transOuter
+          ) {
+            const permittedHeight = (Math.abs(z) - apprHalfWidth) * CONFIG.transitional.slope;
+            addSurfaceResult('Transitional RWY 27', Math.min(permittedHeight, CONFIG.ihs.height));
+            insideTransitional = true;
+          }
+        }
+      }
+
+      if (
+        insideStripLength &&
+        lateralDist >= 0 &&
+        lateralDist <= transitionWidth
+      ) {
+        const permittedHeight = lateralDist * CONFIG.transitional.slope;
+
+        addSurfaceResult(
+          'Transitional RWY 09',
+          Math.min(permittedHeight, CONFIG.ihs.height)
+        );
+
+        addSurfaceResult(
+          'Transitional RWY 27',
+          Math.min(permittedHeight, CONFIG.ihs.height)
+        );
+      }
+
+      // --- Approach 09 planform ---
+      // RWY 09 approach extends toward NEGATIVE X
+      if (x < -rHalf) {
+        const dist = (-rHalf - x) - CONFIG.approach.distFromThreshold;
+
+        if (dist > 0) {
+          const halfWidth =
+            (CONFIG.approach.innerEdge / 2) +
+            dist * CONFIG.approach.divergence;
+
+          if (Math.abs(z) <= halfWidth) {
+            let permittedHeight = 0;
+
+            if (dist <= CONFIG.approach.seg1Len) {
+              permittedHeight = dist * CONFIG.approach.seg1Slope;
+            } else if (dist <= CONFIG.approach.seg1Len + CONFIG.approach.seg2Len) {
+              permittedHeight =
+                (CONFIG.approach.seg1Len * CONFIG.approach.seg1Slope) +
+                ((dist - CONFIG.approach.seg1Len) * CONFIG.approach.seg2Slope);
+            } else {
+              permittedHeight =
+                (CONFIG.approach.seg1Len * CONFIG.approach.seg1Slope) +
+                (CONFIG.approach.seg2Len * CONFIG.approach.seg2Slope);
+            }
+
+            addSurfaceResult('Approach 09', permittedHeight);
+          }
+        }
+      }
+
+      // --- Approach 27 planform ---
+      // RWY 27 approach extends toward POSITIVE X
+      if (x > rHalf) {
+        const dist = (x - rHalf) - CONFIG.approach.distFromThreshold;
+
+        if (dist > 0) {
+          const halfWidth =
+            (CONFIG.approach.innerEdge / 2) +
+            dist * CONFIG.approach.divergence;
+
+          if (Math.abs(z) <= halfWidth) {
+            let permittedHeight = 0;
+
+            if (dist <= CONFIG.approach.seg1Len) {
+              permittedHeight = dist * CONFIG.approach.seg1Slope;
+            } else if (dist <= CONFIG.approach.seg1Len + CONFIG.approach.seg2Len) {
+              permittedHeight =
+                (CONFIG.approach.seg1Len * CONFIG.approach.seg1Slope) +
+                ((dist - CONFIG.approach.seg1Len) * CONFIG.approach.seg2Slope);
+            } else {
+              permittedHeight =
+                (CONFIG.approach.seg1Len * CONFIG.approach.seg1Slope) +
+                (CONFIG.approach.seg2Len * CONFIG.approach.seg2Slope);
+            }
+
+            addSurfaceResult('Approach 27', permittedHeight);
+          }
+        }
+      }
+
+      // --- Take-off 09 planform ---
+      // RWY 09 takeoff extends toward POSITIVE X
+      if (x > rHalf) {
+        const dist = (x - rHalf) - CONFIG.takeoff.distFromEnd;
+
+        if (dist > 0 && dist <= CONFIG.takeoff.length) {
+          const halfWidth = Math.min(
+            (CONFIG.takeoff.innerEdge / 2) +
+            dist * CONFIG.takeoff.divergence,
+            CONFIG.takeoff.finalWidthLimit / 2
+          );
+
+          if (Math.abs(z) <= halfWidth) {
+            addSurfaceResult('Take-off 09', dist * CONFIG.takeoff.slope);
+          }
+        }
+      }
+
+      // --- Take-off 27 planform ---
+      // RWY 27 takeoff extends toward NEGATIVE X
+      if (x < -rHalf) {
+        const dist = (-rHalf - x) - CONFIG.takeoff.distFromEnd;
+
+        if (dist > 0 && dist <= CONFIG.takeoff.length) {
+          const halfWidth = Math.min(
+            (CONFIG.takeoff.innerEdge / 2) +
+            dist * CONFIG.takeoff.divergence,
+            CONFIG.takeoff.finalWidthLimit / 2
+          );
+
+          if (Math.abs(z) <= halfWidth) {
+            addSurfaceResult('Take-off 27', dist * CONFIG.takeoff.slope);
+          }
+        }
+      }
+
+      // --- Inner Approach Surface RWY 09 ---
+      if (x < -rHalf) {
+        const dist = (-rHalf - x) - CONFIG.innerApproach.distFromThreshold;
+
+        if (dist >= 0 && dist <= CONFIG.innerApproach.length) {
+          const halfWidth = CONFIG.innerApproach.innerEdge / 2;
+
+          if (Math.abs(z) <= halfWidth) {
+            const permittedHeight = dist * CONFIG.innerApproach.slope;
+            obstacleInOFZ = true;
+            addSurfaceResult('Inner Approach RWY 09', permittedHeight);
+          }
+        }
+      }
+
+      // --- Inner Approach Surface RWY 27 ---
+      if (x > rHalf) {
+        const dist = (x - rHalf) - CONFIG.innerApproach.distFromThreshold;
+
+        if (dist >= 0 && dist <= CONFIG.innerApproach.length) {
+          const halfWidth = CONFIG.innerApproach.innerEdge / 2;
+
+          if (Math.abs(z) <= halfWidth) {
+            const permittedHeight = dist * CONFIG.innerApproach.slope;
+            obstacleInOFZ = true;
+            addSurfaceResult('Inner Approach RWY 27', permittedHeight);
+          }
+        }
+      }
+
+      // --- Balked Landing Surface RWY 09 ---
+      // RWY 09 landing direction is toward NEGATIVE X,
+      // therefore BLS extends toward POSITIVE X.
+      {
+        const startX = -(rHalf - CONFIG.balkedLanding.distFromThreshold);
+        const endX = startX + CONFIG.balkedLanding.length;
+
+        if (x >= startX && x <= endX) {
+          const dist = x - startX;
+
+          const halfWidth =
+            (CONFIG.balkedLanding.innerEdge / 2) +
+            (dist * CONFIG.balkedLanding.divergence);
+
+          if (Math.abs(z) <= halfWidth) {
+            const permittedHeight = dist * CONFIG.balkedLanding.slope;
+            obstacleInOFZ = true;
+            addSurfaceResult('Balked Landing RWY 09', permittedHeight);
+          }
+        }
+      }
+
+      // --- Balked Landing Surface RWY 27 ---
+      // RWY 27 landing direction is toward POSITIVE X,
+      // therefore BLS extends toward NEGATIVE X.
+      {
+        const startX = (rHalf - CONFIG.balkedLanding.distFromThreshold);
+        const endX = startX - CONFIG.balkedLanding.length;
+
+        if (x <= startX && x >= endX) {
+          const dist = startX - x;
+
+          const halfWidth =
+            (CONFIG.balkedLanding.innerEdge / 2) +
+            (dist * CONFIG.balkedLanding.divergence);
+
+          if (Math.abs(z) <= halfWidth) {
+            const permittedHeight = dist * CONFIG.balkedLanding.slope;
+            obstacleInOFZ = true;
+            addSurfaceResult('Balked Landing RWY 27', permittedHeight);
+          }
+        }
+      }
+
+      // --- Inner Transitional Surface RWY 09 ---
+      {
+        const iaStartX = rHalf + CONFIG.innerApproach.distFromThreshold;
+        const iaEndX = iaStartX + CONFIG.innerApproach.length;
+
+        const blsStartX = rHalf - CONFIG.balkedLanding.distFromThreshold;
+        const blsEndX = blsStartX - CONFIG.balkedLanding.length;
+
+        const getInnerEdge = (xVal) => {
+          if (xVal <= blsStartX) {
+            const dist = Math.max(0, blsStartX - xVal);
+            return (CONFIG.balkedLanding.innerEdge / 2) + (dist * CONFIG.balkedLanding.divergence);
+          }
+
+          return CONFIG.innerApproach.innerEdge / 2;
+        };
+
+        if (x >= blsEndX && x <= iaEndX) {
+          const innerEdge = getInnerEdge(x);
+          const outerEdge = innerEdge + (CONFIG.innerTransitional.maxHeight / 0.3333);
+
+          if (
+            Math.abs(z) >= innerEdge &&
+            Math.abs(z) <= outerEdge
+          ) {
+            const permittedHeight = Math.min(
+              (Math.abs(z) - innerEdge) * 0.3333,
+              CONFIG.innerTransitional.maxHeight
+            );
+
+            obstacleInOFZ = true;
+            addSurfaceResult('Inner Transitional RWY 09', permittedHeight);
+          }
+        }
+      }
+
+      // --- Inner Transitional Surface RWY 27 ---
+      {
+        const iaStartX = -(rHalf + CONFIG.innerApproach.distFromThreshold);
+        const iaEndX = iaStartX - CONFIG.innerApproach.length;
+
+        const blsStartX = -(rHalf - CONFIG.balkedLanding.distFromThreshold);
+        const blsEndX = blsStartX + CONFIG.balkedLanding.length;
+
+        const getInnerEdge = (xVal) => {
+          if (xVal >= blsStartX) {
+            const dist = Math.max(0, xVal - blsStartX);
+            return (CONFIG.balkedLanding.innerEdge / 2) + (dist * CONFIG.balkedLanding.divergence);
+          }
+
+          return CONFIG.innerApproach.innerEdge / 2;
+        };
+
+        if (x <= blsEndX && x >= iaEndX) {
+          const innerEdge = getInnerEdge(x);
+          const outerEdge = innerEdge + (CONFIG.innerTransitional.maxHeight / 0.3333);
+
+          if (
+            Math.abs(z) >= innerEdge &&
+            Math.abs(z) <= outerEdge
+          ) {
+            const permittedHeight = Math.min(
+              (Math.abs(z) - innerEdge) * 0.3333,
+              CONFIG.innerTransitional.maxHeight
+            );
+
+            obstacleInOFZ = true;
+            addSurfaceResult('Inner Transitional RWY 27', permittedHeight);
+          }
+        }
+      }
+
+      // --- UI ---
+      const label = document.createElement('div');
+      label.style.position = 'absolute';
+      label.style.bottom = '40px';
+      label.style.left = '20px';
+      label.style.width = '420px';
+      label.style.maxHeight = '70vh';
+      label.style.overflowY = 'auto';
+      label.style.background = 'rgba(8,12,18,0.96)';
+      label.style.backdropFilter = 'blur(8px)';
+      label.style.padding = '16px';
+      label.style.border = '1px solid rgba(0,212,255,0.35)';
+      label.style.borderRadius = '12px';
+      label.style.fontSize = '12px';
+      label.style.fontFamily = 'Segoe UI, sans-serif';
+      label.style.color = '#ffffff';
+      label.style.boxShadow = '0 8px 24px rgba(0,0,0,0.55)';
+      label.style.zIndex = '999';
+
+      let html = `
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:8px;">
+      
+      <div style="font-size:16px; font-weight:700; color:#00d4ff;">
+        Obstacle Analysis
+      </div>
+
+      <button id="closeObstacleAnalysis" style="background:rgba(255,77,77,0.15); border:1px solid rgba(255,77,77,0.35); color:#ff8080; width:28px; height:28px; border-radius:6px; cursor:pointer; font-size:16px; font-weight:bold; line-height:1;">
+        ×
+      </button>
+    </div>
+  `;
+
+
+      if (surfaceResults.length === 0) {
+
+        html += `
+      <div style="padding:12px; border-radius:10px; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:#cccccc; text-align:center; margin-bottom:12px;">
+        No OLS surfaces applicable at this location.
+      </div>
+
+      <div style="padding:12px; border-radius:10px; background:rgba(0,180,120,0.12); border:1px solid rgba(0,180,120,0.3);">
+        <div style="font-size:11px; color:#7dffb3; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; font-weight:700;">
+          Result
+        </div>
+        <div style="font-size:14px; font-weight:600; color:#d8ffe8;">
+          No OLS height restriction applicable at this point.
+        </div>
+      </div>
+    `;
+
+      } else {
+
+        // --- Find minimum restrictive height ---
+        let minHeight = Math.min(...surfaceResults.map(s => s.height));
+
+        // --- Get all equally restrictive surfaces ---
+        const restrictiveSurfaces = surfaceResults.filter(
+          s => Math.abs(s.height - minHeight) < 0.01
+        );
+
+        const restrictiveNames = restrictiveSurfaces
+          .map(s => s.name)
+          .join(' & ');
+
+        // --- BOX 1 : Applicable Surfaces ---
+        html += `
+      <div style="padding:12px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); margin-bottom:12px;">
+        
+        <div style="font-size:11px; color:#00d4ff; margin-bottom:10px; letter-spacing:0.5px; text-transform:uppercase; font-weight:700;">
+          Applicable Surfaces
+        </div>
+
+        <table style="width:100%; border-collapse:collapse; overflow:hidden; border-radius:8px;">
+          <thead>
+            <tr style="background:rgba(0,212,255,0.14);">
+              <th style="text-align:left; padding:10px; color:#00d4ff; border-bottom:1px solid rgba(255,255,255,0.1); font-size:12px;">
+                Surface
+              </th>
+
+              <th style="text-align:right; padding:10px; color:#00d4ff; border-bottom:1px solid rgba(255,255,255,0.1); font-size:12px;">
+                Permitted Height
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+    `;
+
+        surfaceResults.forEach((s, idx) => {
+
+          const bg = idx % 2 === 0
+            ? 'rgba(255,255,255,0.03)'
+            : 'rgba(255,255,255,0.06)';
+
+          html += `
+        <tr style="background:${bg};">
+          <td style="padding:9px 10px; border-bottom:1px solid rgba(255,255,255,0.06);">
+            ${s.name}
+          </td>
+
+          <td style="padding:9px 10px; border-bottom:1px solid rgba(255,255,255,0.06); text-align:right; color:#7dffb3; font-weight:600;">
+            ${s.height.toFixed(1)} m
+          </td>
+        </tr>
+      `;
+        });
+
+        html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+
+        // --- BOX 2 : Most Restrictive ---
+        html += `
+      <div style="padding:12px; border-radius:10px; background:rgba(0,140,255,0.12); border:1px solid rgba(0,140,255,0.35); margin-bottom:12px;">
+
+        <div style="font-size:11px; color:#7cc8ff; margin-bottom:5px; letter-spacing:0.5px; text-transform:uppercase; font-weight:700;">
+          Most Restrictive Surface
+        </div>
+
+        <div style="font-size:14px; font-weight:700; color:#ffffff; line-height:1.5;">
+          ${restrictiveNames}
+        </div>
+
+        <div style="margin-top:6px; color:#66c2ff; font-size:15px; font-weight:700;">
+          Maximum Permitted Height: ${minHeight.toFixed(1)} m
+        </div>
+      </div>
+    `;
+
+        // --- BOX 3 : Operational Remarks ---
+        const remarks = [];
+
+        if (insideRunwayStrip) {
+          remarks.push(`
+        <div style="margin-bottom:6px;">
+          <b>Runway Strip:</b> Obstacle lies within Runway Strip.
+        </div>
+      `);
+        }
+
+        if (obstacleInOFZ) {
+          remarks.push(`
+        <div style="margin-bottom:6px;">
+          <b>OFZ Requirement:</b> Obstacle must be frangible.
+        </div>
+      `);
+        }
+
+        if (insideRunway) {
+          remarks.push(`
+        <div>
+          <b>Runway Restriction:</b> Obstacle lies on Runway. No obstruction is permitted on Runway.
+        </div>
+      `);
+        }
+
+        if (remarks.length > 0) {
+
+          html += `
+        <div style="padding:12px; border-radius:10px; background:rgba(255,170,0,0.10); border:1px solid rgba(255,170,0,0.25); color:#ffe6a3; line-height:1.5; margin-bottom:12px;">
+
+          <div style="font-size:11px; color:#ffcc66; margin-bottom:8px; letter-spacing:0.5px; text-transform:uppercase; font-weight:700;">
+            Operational Remarks
+          </div>
+
+          ${remarks.join('')}
+        </div>
+      `;
+        }
+
+        // --- BOX 4 : Final Result ---
+        let resultText = `
+      Maximum permissible obstacle height at this location is
+      <span style="color:#7dffb3; font-weight:700;">
+        ${minHeight.toFixed(1)} m
+      </span>.
+    `;
+
+        let resultColor = `
+      background:rgba(0,180,120,0.12);
+      border:1px solid rgba(0,180,120,0.3);
+      color:#d8ffe8;
+    `;
+
+        if (insideRunway) {
+
+          resultText = `
+        <span style="color:#ff8080; font-weight:700;">
+          Obstacle NOT permitted because it lies on Runway.
+        </span>
+      `;
+
+          resultColor = `
+        background:rgba(255,77,77,0.12);
+        border:1px solid rgba(255,77,77,0.3);
+        color:#ffffff;
+      `;
+        }
+
+        html += `
+      <div style="padding:12px; border-radius:10px; ${resultColor}">
+
+        <div style="font-size:11px; margin-bottom:6px; letter-spacing:0.5px; text-transform:uppercase; font-weight:700;">
+          Result
+        </div>
+
+        <div style="font-size:14px; line-height:1.6; font-weight:600;">
+          ${resultText}
+        </div>
+      </div>
+    `;
+      }
+
+      label.innerHTML = html;
+      document.body.appendChild(label);
+      obstacleLabel = label;
+
+      const closeBtn = document.getElementById('closeObstacleAnalysis');
+
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+
+          if (obstacleLabel) {
+            obstacleLabel.remove();
+            obstacleLabel = null;
+          }
+
+          if (obstacleMesh) {
+            scene.remove(obstacleMesh);
+            obstacleMesh = null;
+          }
+
+          obstacleMode = false;
+          controls.enabled = true;
+
+          const obstacleBtn = document.getElementById('obstacle-btn');
+          if (obstacleBtn) {
+            obstacleBtn.classList.remove('active');
+            obstacleBtn.classList.remove('pressed');
+          }
+        });
+      }
+    }
+
     const compassArrow = document.getElementById('compass-arrow');
     controls.enableDamping = true;
     controls.enableZoom = true;
@@ -616,6 +1586,26 @@
     const olsGroup = new THREE.Group();
     scene.add(olsGroup);
 
+    function cycleVScale() {
+      // ... existing logic to cycle vertical scale ...
+      // (This function is likely defined elsewhere, but per instruction, insert new code after zoom value text is updated)
+      // Find the line where zoom value text is updated:
+      // document.getElementById('zoom-value-text').textContent = `${currentVScale}x`;
+      document.getElementById('zoom-value-text').textContent = `${currentVScale}x`;
+
+      const zoomBtn = document.getElementById('zoom-cycle-btn');
+
+      if (zoomBtn) {
+        zoomBtn.classList.add('pressed');
+        clearTimeout(window.zoomBtnTimer);
+
+        window.zoomBtnTimer = setTimeout(() => {
+          zoomBtn.classList.remove('pressed');
+        }, 180);
+      }
+      // ...rest of cycleVScale logic...
+    }
+
     function createBaseline() {
 
       // --- Runway ---
@@ -627,7 +1617,7 @@
       scene.add(rwy);
 
       // --- Runway Centerline (between threshold markings) ---
-      const centerlineMat = new THREE.LineBasicMaterial({ 
+      const centerlineMat = new THREE.LineBasicMaterial({
         color: 0xffffff,
         depthTest: false,
         transparent: true,
@@ -668,7 +1658,7 @@
       centerLine.renderOrder = 999;
 
       // --- Runway Edge Rectangle (side strip markings as full boundary) ---
-      const edgeMat = new THREE.LineBasicMaterial({ 
+      const edgeMat = new THREE.LineBasicMaterial({
         color: 0xffffff,
         depthTest: false,
         transparent: true,
@@ -705,8 +1695,8 @@
         ctx.fillText(text, canvas.width / 2, canvas.height / 2);
 
         const texture = new THREE.CanvasTexture(canvas);
-        const mat = new THREE.MeshBasicMaterial({ 
-          map: texture, 
+        const mat = new THREE.MeshBasicMaterial({
+          map: texture,
           transparent: true,
           depthWrite: false,
           depthTest: false
@@ -729,7 +1719,7 @@
       createRunwayNumber('27', numberPos, Math.PI);
 
       // --- Threshold Markings (inside runway edges) ---
-      const thrMat = new THREE.MeshBasicMaterial({ 
+      const thrMat = new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
         depthWrite: false,
@@ -760,7 +1750,7 @@
 
       // --- Touchdown Zone Markings (pairs at intervals) ---
       // ICAO: 4 pairs at 150m, 300m, 450m, 600m from threshold (skip aiming point overlap)
-      const tdzMat = new THREE.MeshBasicMaterial({ 
+      const tdzMat = new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
         depthWrite: false,
@@ -793,7 +1783,7 @@
       });
 
       // --- Aiming Point Markings (1000 ft ≈ 300m from threshold) ---
-      const aimMat = new THREE.MeshBasicMaterial({ 
+      const aimMat = new THREE.MeshBasicMaterial({
         color: 0xffffff,
         transparent: true,
         depthWrite: false,
@@ -838,28 +1828,28 @@
     }
 
     function createVolumetricSkeleton(ptsTop, color) {
-        const group = new THREE.Group();
-        const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.8 });
-        
-        const topGeo = new THREE.BufferGeometry().setFromPoints(ptsTop);
-        group.add(new THREE.LineLoop(topGeo, mat));
-        
-        const ptsBot = ptsTop.map(p => new THREE.Vector3(p.x, 0, p.z));
-        const botGeo = new THREE.BufferGeometry().setFromPoints(ptsBot);
-        group.add(new THREE.LineLoop(botGeo, mat));
-        
-        ptsTop.forEach((p, i) => {
-            const ribGeo = new THREE.BufferGeometry().setFromPoints([p, ptsBot[i]]);
-            group.add(new THREE.Line(ribGeo, mat));
-        });
-        
-        return group;
+      const group = new THREE.Group();
+      const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.8 });
+
+      const topGeo = new THREE.BufferGeometry().setFromPoints(ptsTop);
+      group.add(new THREE.LineLoop(topGeo, mat));
+
+      const ptsBot = ptsTop.map(p => new THREE.Vector3(p.x, 0, p.z));
+      const botGeo = new THREE.BufferGeometry().setFromPoints(ptsBot);
+      group.add(new THREE.LineLoop(botGeo, mat));
+
+      ptsTop.forEach((p, i) => {
+        const ribGeo = new THREE.BufferGeometry().setFromPoints([p, ptsBot[i]]);
+        group.add(new THREE.Line(ribGeo, mat));
+      });
+
+      return group;
     }
 
     function createPerimeterLines(points, height, color) {
-        const material = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.8 });
-        const geometry = new THREE.BufferGeometry().setFromPoints(points.map(p => new THREE.Vector3(p.x, height, p.y)));
-        return new THREE.LineLoop(geometry, material);
+      const material = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.8 });
+      const geometry = new THREE.BufferGeometry().setFromPoints(points.map(p => new THREE.Vector3(p.x, height, p.y)));
+      return new THREE.LineLoop(geometry, material);
     }
 
     function createWallsForShape(points, bottomY, topY, color, opacity) {
@@ -909,8 +1899,8 @@
         vertices.push(xOff + rInner * cos, sHeight, rInner * sin);
         vertices.push(xOff + rOuter * cos, eHeight, rOuter * sin);
         if (i < segments) {
-            innerPoints.push({ x: xOff + rInner * cos, y: rInner * sin });
-            outerPoints.push({ x: xOff + rOuter * cos, y: rOuter * sin });
+          innerPoints.push({ x: xOff + rInner * cos, y: rInner * sin });
+          outerPoints.push({ x: xOff + rOuter * cos, y: rOuter * sin });
         }
       }
       for (let i = 0; i < segments; i++) {
@@ -935,7 +1925,7 @@
       mesh.rotation.x = -Math.PI / 2; mesh.position.y = scaledHeight;
       olsGroup.add(mesh);
       const wallPoints = []; const segments = 128;
-      for(let i=0; i<segments; i++){
+      for (let i = 0; i < segments; i++) {
         const theta = (i / segments) * Math.PI * 2;
         wallPoints.push({ x: Math.cos(theta) * radius, y: Math.sin(theta) * radius });
       }
@@ -948,52 +1938,57 @@
     }
 
     function generateTransitional(vScale) {
-        const rHalf = CONFIG.runway.length / 2; const sHalfLen = rHalf + CONFIG.strip.extension;
-        const sHalfWid = CONFIG.strip.width / 2; const ihsHeight = CONFIG.ihs.height * vScale;
-        const slope = CONFIG.transitional.slope; const transitionWidth = CONFIG.ihs.height / slope;
-        const addQuad = (v1, v2, v3, v4, arr) => {
-            arr.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v4.x, v4.y, v4.z);
-            arr.push(v2.x, v2.y, v2.z, v3.x, v3.y, v3.z, v4.x, v4.y, v4.z);
-        };
-        const createSurfaceGroup = (vertices, wallVertices) => {
-            const grp = new THREE.Group();
-            const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geo.computeVertexNormals();
-            grp.add(new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: 0x0077ff, transparent: true, opacity: CONFIG.transitional.opacity, side: THREE.DoubleSide })));
-            const wallGeo = new THREE.BufferGeometry(); wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3)); wallGeo.computeVertexNormals();
-            grp.add(new THREE.Mesh(wallGeo, new THREE.MeshPhongMaterial({ color: 0x0077ff, transparent: true, opacity: CONFIG.transitional.opacity * 0.7, side: THREE.DoubleSide })));
-            grp.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0x0077ff, transparent: true, opacity: 0.6 })));
-            return grp;
-        };
-        const centralVerts = []; const centralWalls = [];
+      const rHalf = CONFIG.runway.length / 2; const sHalfLen = rHalf + CONFIG.strip.extension;
+      const sHalfWid = CONFIG.strip.width / 2; const ihsHeight = CONFIG.ihs.height * vScale;
+      const slope = CONFIG.transitional.slope; const transitionWidth = CONFIG.ihs.height / slope;
+      const addQuad = (v1, v2, v3, v4, arr) => {
+        arr.push(v1.x, v1.y, v1.z, v2.x, v2.y, v2.z, v4.x, v4.y, v4.z);
+        arr.push(v2.x, v2.y, v2.z, v3.x, v3.y, v3.z, v4.x, v4.y, v4.z);
+      };
+      const createSurfaceGroup = (vertices, wallVertices) => {
+        const grp = new THREE.Group();
+        const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geo.computeVertexNormals();
+        grp.add(new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: 0x0077ff, transparent: true, opacity: CONFIG.transitional.opacity, side: THREE.DoubleSide })));
+        const wallGeo = new THREE.BufferGeometry(); wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3)); wallGeo.computeVertexNormals();
+        grp.add(new THREE.Mesh(wallGeo, new THREE.MeshPhongMaterial({ color: 0x0077ff, transparent: true, opacity: CONFIG.transitional.opacity * 0.7, side: THREE.DoubleSide })));
+        grp.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), new THREE.LineBasicMaterial({ color: 0x0077ff, transparent: true, opacity: 0.6 })));
+        return grp;
+      };
+      const centralVerts = []; const centralWalls = [];
+      [1, -1].forEach(side => {
+        const h1 = { x: -sHalfLen, y: 0, z: sHalfWid * side }; const h2 = { x: sHalfLen, y: 0, z: sHalfWid * side };
+        const o1 = { x: -sHalfLen, y: ihsHeight, z: (sHalfWid + transitionWidth) * side }; const o2 = { x: sHalfLen, y: ihsHeight, z: (sHalfWid + transitionWidth) * side };
+        addQuad(h1, h2, o2, o1, centralVerts);
+        const o1G = { ...o1, y: 0 }; const o2G = { ...o2, y: 0 }; addQuad(o1, o2, o2G, o1G, centralWalls);
+      });
+      const gCentral = createSurfaceGroup(centralVerts, centralWalls); olsGroup.add(gCentral);
+      const generateEndTrans = (dir) => {
+        const verts = []; const walls = [];
         [1, -1].forEach(side => {
-            const h1 = { x: -sHalfLen, y: 0, z: sHalfWid * side }; const h2 = { x: sHalfLen, y: 0, z: sHalfWid * side };
-            const o1 = { x: -sHalfLen, y: ihsHeight, z: (sHalfWid + transitionWidth) * side }; const o2 = { x: sHalfLen, y: ihsHeight, z: (sHalfWid + transitionWidth) * side };
-            addQuad(h1, h2, o2, o1, centralVerts);
-            const o1G = { ...o1, y: 0 }; const o2G = { ...o2, y: 0 }; addQuad(o1, o2, o2G, o1G, centralWalls);
+          const appStartX = (rHalf + CONFIG.approach.distFromThreshold) * dir;
+          const ha = { x: appStartX, y: 0, z: (CONFIG.approach.innerEdge / 2) * side };
+          const oa = { x: appStartX, y: ihsHeight, z: (CONFIG.approach.innerEdge / 2 + transitionWidth) * side };
+
+          const distToIHS = CONFIG.ihs.height / CONFIG.approach.seg1Slope;
+          const hbX = appStartX + (distToIHS * dir);
+          const hbW = (CONFIG.approach.innerEdge / 2) + (distToIHS * CONFIG.approach.divergence);
+          const hb = { x: hbX, y: ihsHeight, z: hbW * side };
+          verts.push(ha.x, ha.y, ha.z, hb.x, hb.y, hb.z, oa.x, oa.y, oa.z);
+          const oaG = { ...oa, y: 0 }; const hbG = { ...hb, y: 0 }; addQuad(oa, hb, hbG, oaG, walls);
+          walls.push(ha.x, ha.y, ha.z, hb.x, hb.y, hb.z, hb.x, 0, hb.z);
+          const hStripEnd = { x: sHalfLen * dir, y: 0, z: sHalfWid * side };
+          const oStripEnd = { x: sHalfLen * dir, y: ihsHeight, z: (sHalfWid + transitionWidth) * side };
+          addQuad(hStripEnd, ha, oa, oStripEnd, verts);
+          const oStripEndG = { ...oStripEnd, y: 0 }; addQuad(oStripEnd, oa, oaG, oStripEndG, walls);
         });
-        const gCentral = createSurfaceGroup(centralVerts, centralWalls); olsGroup.add(gCentral);
-        const generateEndTrans = (dir) => {
-            const verts = []; const walls = [];
-            [1, -1].forEach(side => {
-                const appStartX = (rHalf + CONFIG.approach.distFromThreshold) * dir;
-                const ha = { x: appStartX, y: 0, z: (CONFIG.approach.innerEdge/2) * side };
-                const oa = { x: appStartX, y: ihsHeight, z: (CONFIG.approach.innerEdge/2 + transitionWidth) * side };
-                const distToIHS = CONFIG.ihs.height / CONFIG.approach.seg1Slope;
-                const hbX = appStartX + (distToIHS * dir); const hbW = (CONFIG.approach.innerEdge/2) + (distToIHS * CONFIG.approach.divergence);
-                const hb = { x: hbX, y: ihsHeight, z: hbW * side };
-                verts.push(ha.x, ha.y, ha.z, hb.x, hb.y, hb.z, oa.x, oa.y, oa.z);
-                const oaG = { ...oa, y: 0 }; const hbG = { ...hb, y: 0 }; addQuad(oa, hb, hbG, oaG, walls);
-                walls.push(ha.x, ha.y, ha.z, hb.x, hb.y, hb.z, hb.x, 0, hb.z);
-                const hStripEnd = { x: sHalfLen * dir, y: 0, z: sHalfWid * side };
-                const oStripEnd = { x: sHalfLen * dir, y: ihsHeight, z: (sHalfWid + transitionWidth) * side };
-                addQuad(hStripEnd, ha, oa, oStripEnd, verts);
-                const oStripEndG = { ...oStripEnd, y: 0 }; addQuad(oStripEnd, oa, oaG, oStripEndG, walls);
-            });
-            return createSurfaceGroup(verts, walls);
-        };
-        const g09 = generateEndTrans(1); const g27 = generateEndTrans(-1);
-        olsGroup.add(g09, g27);
-        return { gCentral, g09, g27 };
+        return createSurfaceGroup(verts, walls);
+      };
+      // Swap runway assignment so displayed transitional surfaces match runway selection correctly
+      const g09 = generateEndTrans(-1);
+      const g27 = generateEndTrans(1);
+
+      olsGroup.add(g09, g27);
+      return { gCentral, g09, g27 };
     }
 
     function createSingleTakeOff(side, vScale) {
@@ -1002,9 +1997,9 @@
       const dir = -side;
       const startX = (rHalf + cfg.distFromEnd) * dir;
       const distLimit = (cfg.finalWidthLimit - cfg.innerEdge) / (2 * cfg.divergence);
-      
-      const p1 = new THREE.Vector3(startX, 0, -cfg.innerEdge/2); 
-      const p2 = new THREE.Vector3(startX, 0, cfg.innerEdge/2);  
+
+      const p1 = new THREE.Vector3(startX, 0, -cfg.innerEdge / 2);
+      const p2 = new THREE.Vector3(startX, 0, cfg.innerEdge / 2);
 
       let pts = [];
       if (distLimit < cfg.length) {
@@ -1014,32 +2009,32 @@
         const eX = startX + (cfg.length * dir);
         const eH = (cfg.length * cfg.slope) * vScale;
         pts = [
-            p1, p2, 
-            new THREE.Vector3(tX, tH, tW/2),
-            new THREE.Vector3(eX, eH, tW/2),
-            new THREE.Vector3(eX, eH, -tW/2),
-            new THREE.Vector3(tX, tH, -tW/2)
+          p1, p2,
+          new THREE.Vector3(tX, tH, tW / 2),
+          new THREE.Vector3(eX, eH, tW / 2),
+          new THREE.Vector3(eX, eH, -tW / 2),
+          new THREE.Vector3(tX, tH, -tW / 2)
         ];
       } else {
         const eX = startX + (cfg.length * dir);
         const eW = cfg.innerEdge + (2 * cfg.length * cfg.divergence);
         const eH = (cfg.length * cfg.slope) * vScale;
         pts = [
-            p1, p2,
-            new THREE.Vector3(eX, eH, eW/2),
-            new THREE.Vector3(eX, eH, -eW/2)
+          p1, p2,
+          new THREE.Vector3(eX, eH, eW / 2),
+          new THREE.Vector3(eX, eH, -eW / 2)
         ];
       }
 
       const geo = new THREE.BufferGeometry().setFromPoints(pts);
-      if(pts.length === 6) geo.setIndex([0, 1, 5, 1, 2, 5, 2, 4, 5, 2, 3, 4]);
+      if (pts.length === 6) geo.setIndex([0, 1, 5, 1, 2, 5, 2, 4, 5, 2, 3, 4]);
       else geo.setIndex([0, 1, 2, 0, 2, 3]);
       geo.computeVertexNormals();
 
       const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: 0xff1493, transparent: true, opacity: cfg.opacity, side: THREE.DoubleSide }));
       const wallVertices = [];
       pts.forEach((p, i) => {
-        const next = pts[(i+1)%pts.length];
+        const next = pts[(i + 1) % pts.length];
         wallVertices.push(p.x, 0, p.z, p.x, p.y, p.z, next.x, 0, next.z);
         wallVertices.push(p.x, p.y, p.z, next.x, next.y, next.z, next.x, 0, next.z);
       });
@@ -1056,725 +2051,741 @@
       const h1 = (cfg.seg1Len * cfg.seg1Slope) * vScale; const w1 = w0 + (2 * cfg.seg1Len * cfg.divergence); const x1 = startX + (cfg.seg1Len * side);
       const h2 = h1 + (cfg.seg2Len * cfg.seg2Slope) * vScale; const w2 = w1 + (2 * cfg.seg2Len * cfg.divergence); const x2 = x1 + (cfg.seg2Len * side);
       const h3 = h2; const w3 = w2 + (2 * cfg.seg3Len * cfg.divergence); const x3 = x2 + (cfg.seg3Len * side);
-      
+
       const pts = [
-        new THREE.Vector3(startX, h0, -w0/2), new THREE.Vector3(startX, h0, w0/2),
-        new THREE.Vector3(x1, h1, w1/2), new THREE.Vector3(x2, h2, w2/2),
-        new THREE.Vector3(x3, h3, w3/2), new THREE.Vector3(x3, h3, -w3/2),
-        new THREE.Vector3(x2, h2, -w2/2), new THREE.Vector3(x1, h1, -w1/2)
+        new THREE.Vector3(startX, h0, -w0 / 2), new THREE.Vector3(startX, h0, w0 / 2),
+        new THREE.Vector3(x1, h1, w1 / 2), new THREE.Vector3(x2, h2, w2 / 2),
+        new THREE.Vector3(x3, h3, w3 / 2), new THREE.Vector3(x3, h3, -w3 / 2),
+        new THREE.Vector3(x2, h2, -w2 / 2), new THREE.Vector3(x1, h1, -w1 / 2)
       ];
 
       const geo = new THREE.BufferGeometry().setFromPoints(pts);
       geo.setIndex([0, 1, 7, 1, 2, 7, 2, 6, 7, 2, 3, 6, 3, 5, 6, 3, 4, 5]); geo.computeVertexNormals();
       const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: 0x32cd32, transparent: true, opacity: cfg.opacity, side: THREE.DoubleSide }));
-      
+
       const wallVertices = [];
       pts.forEach((p, i) => {
-        const next = pts[(i+1)%pts.length];
+        const next = pts[(i + 1) % pts.length];
         wallVertices.push(p.x, 0, p.z, p.x, p.y, p.z, next.x, 0, next.z);
         wallVertices.push(p.x, p.y, p.z, next.x, next.y, next.z, next.x, 0, next.z);
       });
       const wallGeo = new THREE.BufferGeometry(); wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3)); wallGeo.computeVertexNormals();
       const wallMesh = new THREE.Mesh(wallGeo, new THREE.MeshPhongMaterial({ color: 0x32cd32, transparent: true, opacity: cfg.opacity * 0.7, side: THREE.DoubleSide }));
-      
+
       const lineGroup = createVolumetricSkeleton(pts, 0x32cd32);
-      
+
       const delineatorMat = new THREE.LineBasicMaterial({ color: 0x32cd32, transparent: true, opacity: 0.9, linewidth: 2 });
-      const l1Geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x1, h1, -w1/2), new THREE.Vector3(x1, h1, w1/2)]);
+      const l1Geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x1, h1, -w1 / 2), new THREE.Vector3(x1, h1, w1 / 2)]);
       lineGroup.add(new THREE.Line(l1Geo, delineatorMat));
-      const l2Geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x2, h2, -w2/2), new THREE.Vector3(x2, h2, w2/2)]);
+      const l2Geo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x2, h2, -w2 / 2), new THREE.Vector3(x2, h2, w2 / 2)]);
       lineGroup.add(new THREE.Line(l2Geo, delineatorMat));
-      
+
       return { mesh, wallMesh, line: lineGroup };
     }
 
     function createSingleInnerApproach(side, vScale) {
-        const cfg = CONFIG.innerApproach; const rHalf = CONFIG.runway.length / 2;
-        const startX = (rHalf + cfg.distFromThreshold) * side; const endX = startX + (cfg.length * side); const endHeight = (cfg.length * cfg.slope) * vScale;
-        const pts = [new THREE.Vector3(startX, 0, -cfg.innerEdge/2), new THREE.Vector3(startX, 0, cfg.innerEdge/2), new THREE.Vector3(endX, endHeight, cfg.innerEdge/2), new THREE.Vector3(endX, endHeight, -cfg.innerEdge/2)];
-        const geo = new THREE.BufferGeometry().setFromPoints(pts);
-        geo.setIndex([0, 1, 2, 0, 2, 3]); geo.computeVertexNormals();
-        const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: 0x00ffff, transparent: true, opacity: cfg.opacity, side: THREE.DoubleSide }));
-        const wallVertices = [];
-        pts.forEach((p, i) => {
-            const next = pts[(i+1)%pts.length];
-            wallVertices.push(p.x, 0, p.z, p.x, p.y, p.z, next.x, 0, next.z);
-            wallVertices.push(p.x, p.y, p.z, next.x, next.y, next.z, next.x, 0, next.z);
-        });
-        const wallGeo = new THREE.BufferGeometry(); wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3)); wallGeo.computeVertexNormals();
-        const wallMesh = new THREE.Mesh(wallGeo, new THREE.MeshPhongMaterial({ color: 0x00ffff, transparent: true, opacity: cfg.opacity * 0.7, side: THREE.DoubleSide }));
-        const line = createVolumetricSkeleton(pts, 0x00ffff);
-        return { mesh, wallMesh, line };
+      const cfg = CONFIG.innerApproach; const rHalf = CONFIG.runway.length / 2;
+      const startX = (rHalf + cfg.distFromThreshold) * side; const endX = startX + (cfg.length * side); const endHeight = (cfg.length * cfg.slope) * vScale;
+      const pts = [new THREE.Vector3(startX, 0, -cfg.innerEdge / 2), new THREE.Vector3(startX, 0, cfg.innerEdge / 2), new THREE.Vector3(endX, endHeight, cfg.innerEdge / 2), new THREE.Vector3(endX, endHeight, -cfg.innerEdge / 2)];
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      geo.setIndex([0, 1, 2, 0, 2, 3]); geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: 0x00ffff, transparent: true, opacity: cfg.opacity, side: THREE.DoubleSide }));
+      const wallVertices = [];
+      pts.forEach((p, i) => {
+        const next = pts[(i + 1) % pts.length];
+        wallVertices.push(p.x, 0, p.z, p.x, p.y, p.z, next.x, 0, next.z);
+        wallVertices.push(p.x, p.y, p.z, next.x, next.y, next.z, next.x, 0, next.z);
+      });
+      const wallGeo = new THREE.BufferGeometry(); wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3)); wallGeo.computeVertexNormals();
+      const wallMesh = new THREE.Mesh(wallGeo, new THREE.MeshPhongMaterial({ color: 0x00ffff, transparent: true, opacity: cfg.opacity * 0.7, side: THREE.DoubleSide }));
+      const line = createVolumetricSkeleton(pts, 0x00ffff);
+      return { mesh, wallMesh, line };
     }
 
     function createSingleBalkedLanding(side, vScale) {
-        const cfg = CONFIG.balkedLanding; 
-        const rHalf = CONFIG.runway.length / 2;
-        // The BLS starts at a distance from the landing threshold (side * rHalf) 
-        // and extends INTO the climb-out direction (opposite of approach).
-        const startX = (rHalf - cfg.distFromThreshold) * side; 
-        const endX = startX - (cfg.length * side); 
-        const endHeight = (cfg.length * cfg.slope) * vScale;
-        const endWidth = cfg.innerEdge + (2 * cfg.length * cfg.divergence);
+      const cfg = CONFIG.balkedLanding;
+      const rHalf = CONFIG.runway.length / 2;
+      // The BLS starts at a distance from the landing threshold (side * rHalf) 
+      // and extends INTO the climb-out direction (opposite of approach).
+      const startX = (rHalf - cfg.distFromThreshold) * side;
+      const endX = startX - (cfg.length * side);
+      const endHeight = (cfg.length * cfg.slope) * vScale;
+      const endWidth = cfg.innerEdge + (2 * cfg.length * cfg.divergence);
 
-        const pts = [
-            new THREE.Vector3(startX, 0, -cfg.innerEdge/2),
-            new THREE.Vector3(startX, 0, cfg.innerEdge/2),
-            new THREE.Vector3(endX, endHeight, endWidth/2),
-            new THREE.Vector3(endX, endHeight, -endWidth/2)
-        ];
+      const pts = [
+        new THREE.Vector3(startX, 0, -cfg.innerEdge / 2),
+        new THREE.Vector3(startX, 0, cfg.innerEdge / 2),
+        new THREE.Vector3(endX, endHeight, endWidth / 2),
+        new THREE.Vector3(endX, endHeight, -endWidth / 2)
+      ];
 
-        const geo = new THREE.BufferGeometry().setFromPoints(pts);
-        geo.setIndex([0, 1, 2, 0, 2, 3]); geo.computeVertexNormals();
-        const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: 0xff4500, transparent: true, opacity: cfg.opacity, side: THREE.DoubleSide }));
-        
-        const wallVertices = [];
-        pts.forEach((p, i) => {
-            const next = pts[(i+1)%pts.length];
-            wallVertices.push(p.x, 0, p.z, p.x, p.y, p.z, next.x, 0, next.z);
-            wallVertices.push(p.x, p.y, p.z, next.x, next.y, next.z, next.x, 0, next.z);
-        });
-        const wallGeo = new THREE.BufferGeometry(); wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3)); wallGeo.computeVertexNormals();
-        const wallMesh = new THREE.Mesh(wallGeo, new THREE.MeshPhongMaterial({ color: 0xff4500, transparent: true, opacity: cfg.opacity * 0.7, side: THREE.DoubleSide }));
-        const line = createVolumetricSkeleton(pts, 0xff4500);
-        
-        return { mesh, wallMesh, line };
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      geo.setIndex([0, 1, 2, 0, 2, 3]); geo.computeVertexNormals();
+      const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: 0xff4500, transparent: true, opacity: cfg.opacity, side: THREE.DoubleSide }));
+
+      const wallVertices = [];
+      pts.forEach((p, i) => {
+        const next = pts[(i + 1) % pts.length];
+        wallVertices.push(p.x, 0, p.z, p.x, p.y, p.z, next.x, 0, next.z);
+        wallVertices.push(p.x, p.y, p.z, next.x, next.y, next.z, next.x, 0, next.z);
+      });
+      const wallGeo = new THREE.BufferGeometry(); wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3)); wallGeo.computeVertexNormals();
+      const wallMesh = new THREE.Mesh(wallGeo, new THREE.MeshPhongMaterial({ color: 0xff4500, transparent: true, opacity: cfg.opacity * 0.7, side: THREE.DoubleSide }));
+      const line = createVolumetricSkeleton(pts, 0xff4500);
+
+      return { mesh, wallMesh, line };
     }
 
 
     function createITSForRunway(vScale) {
-        const cfg = CONFIG.innerTransitional;
-        const rHalf = CONFIG.runway.length / 2;
-        const ia = CONFIG.innerApproach;
+      const cfg = CONFIG.innerTransitional;
+      const rHalf = CONFIG.runway.length / 2;
+      const ia = CONFIG.innerApproach;
 
-        // IAS limits (approach side)
-        const iaStartX = rHalf + ia.distFromThreshold;        // inner end of IAS
-        const iaEndX = iaStartX + ia.length;                  // outer end of IAS
+      // IAS limits (approach side)
+      const iaStartX = rHalf + ia.distFromThreshold;        // inner end of IAS
+      const iaEndX = iaStartX + ia.length;                  // outer end of IAS
 
-        // BLS limits (towards runway side)
-        const blsStartX = rHalf - CONFIG.balkedLanding.distFromThreshold; // BLS start (at 0 height)
-        const blsEndX = blsStartX - CONFIG.balkedLanding.length;          // where BLS reaches ~45m
+      // BLS limits (towards runway side)
+      const blsStartX = rHalf - CONFIG.balkedLanding.distFromThreshold; // BLS start (at 0 height)
+      const blsEndX = blsStartX - CONFIG.balkedLanding.length;          // where BLS reaches ~45m
 
-        // Overall ITS span: from BLS far end → IAS far end
-        const startX = blsEndX;
-        const endX = iaEndX;
+      // Overall ITS span: from BLS far end → IAS far end
+      const startX = blsEndX;
+      const endX = iaEndX;
 
-        const edge = ia.innerEdge / 2;
-        // Inner edge follows IAS on approach side and BLS on runway side
-        const getInnerEdgeHalf = (x) => {
-            // BLS region (inner edge expands with divergence)
-            if (x <= blsStartX) {
-                // distance from BLS start towards BLS end
-                const dist = Math.max(0, blsStartX - x);
-                return (CONFIG.balkedLanding.innerEdge / 2) + (dist * CONFIG.balkedLanding.divergence);
-            }
-            // Flat region between BLS start and IAS start
-            if (x < iaStartX) {
-                return ia.innerEdge / 2;
-            }
-            // IAS region (constant inner edge)
-            return ia.innerEdge / 2;
-        };
-        const topHeight = cfg.maxHeight * vScale;             // 45m IHS
+      const edge = ia.innerEdge / 2;
+      // Inner edge follows IAS on approach side and BLS on runway side
+      const getInnerEdgeHalf = (x) => {
+        // BLS region (inner edge expands with divergence)
+        if (x <= blsStartX) {
+          // distance from BLS start towards BLS end
+          const dist = Math.max(0, blsStartX - x);
+          return (CONFIG.balkedLanding.innerEdge / 2) + (dist * CONFIG.balkedLanding.divergence);
+        }
+        // Flat region between BLS start and IAS start
+        if (x < iaStartX) {
+          return ia.innerEdge / 2;
+        }
+        // IAS region (constant inner edge)
+        return ia.innerEdge / 2;
+      };
+      const topHeight = cfg.maxHeight * vScale;             // 45m IHS
 
-        const vertices = [];
+      const vertices = [];
 
-        const addQuad = (v1, v2, v3, v4) => {
-            vertices.push(
-                v1.x, v1.y, v1.z,
-                v2.x, v2.y, v2.z,
-                v4.x, v4.y, v4.z
-            );
-            vertices.push(
-                v2.x, v2.y, v2.z,
-                v3.x, v3.y, v3.z,
-                v4.x, v4.y, v4.z
-            );
-        };
-
-        const slopeITS = 0.3333;
-        const runAt = (baseHeightScaled) => {
-            const baseHeightTrue = baseHeightScaled / vScale; // remove scaling effect
-            return (cfg.maxHeight - baseHeightTrue) / slopeITS;
-        };
-
-        // Height along ITS span
-        const getHeight = (x) => {
-            // Region 1: Beyond BLS (constant top region start)
-            if (x <= blsEndX) return CONFIG.balkedLanding.length * CONFIG.balkedLanding.slope * vScale;
-
-            // Region 2: BLS zone
-            if (x <= blsStartX) {
-                const dist = blsStartX - x;
-                return dist * CONFIG.balkedLanding.slope * vScale;
-            }
-
-            // Region 3: Flat (between BLS start and IAS start)
-            if (x < iaStartX) return 0;
-
-            // Region 4: IAS zone
-            const dist = x - iaStartX;
-            return Math.min(dist, ia.length) * ia.slope * vScale;
-        };
-        const getOuter = (x, baseH, innerE) => {
-            if (x > blsStartX && x < iaStartX) {
-                return innerE + runAt(0);
-            }
-            return innerE + runAt(baseH);
-        };
-
-        const buildSide = (side) => {
-
-            // Key longitudinal points
-            const xBLSend = startX;
-            const xBLSstart = blsStartX;
-            const xIASstart = iaStartX;
-            const xIASend = endX;
-
-            const xs = [xBLSend, xBLSstart, xIASstart, xIASend];
-
-            for (let i = 0; i < xs.length - 1; i++) {
-
-                const x1 = xs[i];
-                const x2 = xs[i + 1];
-
-                const h1y = getHeight(x1);
-                const h2y = getHeight(x2);
-
-                const e1 = getInnerEdgeHalf(x1);
-                const e2 = getInnerEdgeHalf(x2);
-
-                const h1 = { x: x1, y: h1y, z: e1 * side };
-                const h2 = { x: x2, y: h2y, z: e2 * side };
-
-                const o1 = { x: x1, y: topHeight, z: getOuter(x1, h1y, e1) * side };
-                const o2 = { x: x2, y: topHeight, z: getOuter(x2, h2y, e2) * side };
-
-                addQuad(h1, h2, o2, o1);
-            }
-        };
-
-        buildSide(1);
-        buildSide(-1);
-
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        geo.computeVertexNormals();
-
-        const mesh = new THREE.Mesh(
-            geo,
-            new THREE.MeshPhongMaterial({
-                color: 0xffff00,
-                transparent: true,
-                opacity: cfg.opacity,
-                side: THREE.DoubleSide
-            })
+      const addQuad = (v1, v2, v3, v4) => {
+        vertices.push(
+          v1.x, v1.y, v1.z,
+          v2.x, v2.y, v2.z,
+          v4.x, v4.y, v4.z
         );
+        vertices.push(
+          v2.x, v2.y, v2.z,
+          v3.x, v3.y, v3.z,
+          v4.x, v4.y, v4.z
+        );
+      };
 
-        // --- Add vertical walls along outer edges using the same xs points ---
-        const wallVertices = [];
+      const slopeITS = 0.3333;
+      const runAt = (baseHeightScaled) => {
+        const baseHeightTrue = baseHeightScaled / vScale; // remove scaling effect
+        return (cfg.maxHeight - baseHeightTrue) / slopeITS;
+      };
 
-        const pushWall = (p1, p2) => {
-            wallVertices.push(
-                p1.x, 0, p1.z,
-                p1.x, p1.y, p1.z,
-                p2.x, 0, p2.z,
+      // Height along ITS span
+      const getHeight = (x) => {
+        // Region 1: Beyond BLS (constant top region start)
+        if (x <= blsEndX) return CONFIG.balkedLanding.length * CONFIG.balkedLanding.slope * vScale;
 
-                p1.x, p1.y, p1.z,
-                p2.x, p2.y, p2.z,
-                p2.x, 0, p2.z
-            );
-        };
-
-        // use xs array for 4 sections
-        const xs = [startX, blsStartX, iaStartX, endX];
-        for (let i = 0; i < xs.length - 1; i++) {
-            const x1 = xs[i];
-            const x2 = xs[i + 1];
-
-            const h1y = getHeight(x1);
-            const h2y = getHeight(x2);
-
-            const e1 = getInnerEdgeHalf(x1);
-            const e2 = getInnerEdgeHalf(x2);
-
-            // left (side=1)
-            const o1L = { x: x1, y: topHeight, z: getOuter(x1, h1y, e1) };
-            const o2L = { x: x2, y: topHeight, z: getOuter(x2, h2y, e2) };
-            pushWall(o1L, o2L);
-            // right (side=-1)
-            const o1R = { x: x1, y: topHeight, z: -getOuter(x1, h1y, e1) };
-            const o2R = { x: x2, y: topHeight, z: -getOuter(x2, h2y, e2) };
-            pushWall(o2R, o1R);
+        // Region 2: BLS zone
+        if (x <= blsStartX) {
+          const dist = blsStartX - x;
+          return dist * CONFIG.balkedLanding.slope * vScale;
         }
 
-        // --- Add vertical walls along INNER edges (following IAS + BLS edges) ---
-        for (let i = 0; i < xs.length - 1; i++) {
-            const x1 = xs[i];
-            const x2 = xs[i + 1];
+        // Region 3: Flat (between BLS start and IAS start)
+        if (x < iaStartX) return 0;
 
-            const h1y = getHeight(x1);
-            const h2y = getHeight(x2);
-
-            const e1 = getInnerEdgeHalf(x1);
-            const e2 = getInnerEdgeHalf(x2);
-
-            // left inner wall
-            const i1L = { x: x1, y: h1y, z: e1 };
-            const i2L = { x: x2, y: h2y, z: e2 };
-            pushWall(i1L, i2L);
-
-            // right inner wall
-            const i1R = { x: x1, y: h1y, z: -e1 };
-            const i2R = { x: x2, y: h2y, z: -e2 };
-            pushWall(i2R, i1R);
+        // Region 4: IAS zone
+        const dist = x - iaStartX;
+        return Math.min(dist, ia.length) * ia.slope * vScale;
+      };
+      const getOuter = (x, baseH, innerE) => {
+        if (x > blsStartX && x < iaStartX) {
+          return innerE + runAt(0);
         }
+        return innerE + runAt(baseH);
+      };
 
-        // --- Add trapezium walls at IAS outer end (closing sides only) ---
-        const xEnd = endX;
-        const hEnd = getHeight(xEnd);
-        const eEnd = getInnerEdgeHalf(xEnd);
+      const buildSide = (side) => {
 
+        // Key longitudinal points
+        const xBLSend = startX;
+        const xBLSstart = blsStartX;
+        const xIASstart = iaStartX;
+        const xIASend = endX;
 
-        const oEnd = getOuter(xEnd, hEnd, eEnd);
+        const xs = [xBLSend, xBLSstart, xIASstart, xIASend];
 
-        // LEFT trapezium (IAS side)
-        const iEndL = { x: xEnd, y: hEnd, z: eEnd };
-        const oEndL = { x: xEnd, y: topHeight, z: oEnd };
+        for (let i = 0; i < xs.length - 1; i++) {
 
+          const x1 = xs[i];
+          const x2 = xs[i + 1];
+
+          const h1y = getHeight(x1);
+          const h2y = getHeight(x2);
+
+          const e1 = getInnerEdgeHalf(x1);
+          const e2 = getInnerEdgeHalf(x2);
+
+          const h1 = { x: x1, y: h1y, z: e1 * side };
+          const h2 = { x: x2, y: h2y, z: e2 * side };
+
+          const o1 = { x: x1, y: topHeight, z: getOuter(x1, h1y, e1) * side };
+          const o2 = { x: x2, y: topHeight, z: getOuter(x2, h2y, e2) * side };
+
+          addQuad(h1, h2, o2, o1);
+        }
+      };
+
+      buildSide(1);
+      buildSide(-1);
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      geo.computeVertexNormals();
+
+      const mesh = new THREE.Mesh(
+        geo,
+        new THREE.MeshPhongMaterial({
+          color: 0xffff00,
+          transparent: true,
+          opacity: cfg.opacity,
+          side: THREE.DoubleSide
+        })
+      );
+
+      // --- Add vertical walls along outer edges using the same xs points ---
+      const wallVertices = [];
+
+      const pushWall = (p1, p2) => {
         wallVertices.push(
-            iEndL.x, 0, iEndL.z,
-            iEndL.x, iEndL.y, iEndL.z,
-            oEndL.x, 0, oEndL.z,
+          p1.x, 0, p1.z,
+          p1.x, p1.y, p1.z,
+          p2.x, 0, p2.z,
 
-            iEndL.x, iEndL.y, iEndL.z,
-            oEndL.x, oEndL.y, oEndL.z,
-            oEndL.x, 0, oEndL.z
+          p1.x, p1.y, p1.z,
+          p2.x, p2.y, p2.z,
+          p2.x, 0, p2.z
         );
+      };
 
-        // RIGHT trapezium (IAS side)
-        const iEndR = { x: xEnd, y: hEnd, z: -eEnd };
-        const oEndR = { x: xEnd, y: topHeight, z: -oEnd };
+      // use xs array for 4 sections
+      const xs = [startX, blsStartX, iaStartX, endX];
+      for (let i = 0; i < xs.length - 1; i++) {
+        const x1 = xs[i];
+        const x2 = xs[i + 1];
 
-        wallVertices.push(
-            iEndR.x, 0, iEndR.z,
-            oEndR.x, 0, oEndR.z,
-            iEndR.x, iEndR.y, iEndR.z,
+        const h1y = getHeight(x1);
+        const h2y = getHeight(x2);
 
-            iEndR.x, iEndR.y, iEndR.z,
-            oEndR.x, 0, oEndR.z,
-            oEndR.x, oEndR.y, oEndR.z
-        );
+        const e1 = getInnerEdgeHalf(x1);
+        const e2 = getInnerEdgeHalf(x2);
+
+        // left (side=1)
+        const o1L = { x: x1, y: topHeight, z: getOuter(x1, h1y, e1) };
+        const o2L = { x: x2, y: topHeight, z: getOuter(x2, h2y, e2) };
+        pushWall(o1L, o2L);
+        // right (side=-1)
+        const o1R = { x: x1, y: topHeight, z: -getOuter(x1, h1y, e1) };
+        const o2R = { x: x2, y: topHeight, z: -getOuter(x2, h2y, e2) };
+        pushWall(o2R, o1R);
+      }
+
+      // --- Add vertical walls along INNER edges (following IAS + BLS edges) ---
+      for (let i = 0; i < xs.length - 1; i++) {
+        const x1 = xs[i];
+        const x2 = xs[i + 1];
+
+        const h1y = getHeight(x1);
+        const h2y = getHeight(x2);
+
+        const e1 = getInnerEdgeHalf(x1);
+        const e2 = getInnerEdgeHalf(x2);
+
+        // left inner wall
+        const i1L = { x: x1, y: h1y, z: e1 };
+        const i2L = { x: x2, y: h2y, z: e2 };
+        pushWall(i1L, i2L);
+
+        // right inner wall
+        const i1R = { x: x1, y: h1y, z: -e1 };
+        const i2R = { x: x2, y: h2y, z: -e2 };
+        pushWall(i2R, i1R);
+      }
+
+      // --- Add trapezium walls at IAS outer end (closing sides only) ---
+      const xEnd = endX;
+      const hEnd = getHeight(xEnd);
+      const eEnd = getInnerEdgeHalf(xEnd);
 
 
-        const wallGeo = new THREE.BufferGeometry();
-        wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3));
-        wallGeo.computeVertexNormals();
+      const oEnd = getOuter(xEnd, hEnd, eEnd);
 
-        const wallMesh = new THREE.Mesh(
-            wallGeo,
-            new THREE.MeshPhongMaterial({
-                color: 0xffff00,
-                transparent: true,
-                opacity: cfg.opacity * 0.7,
-                side: THREE.DoubleSide
-            })
-        );
+      // LEFT trapezium (IAS side)
+      const iEndL = { x: xEnd, y: hEnd, z: eEnd };
+      const oEndL = { x: xEnd, y: topHeight, z: oEnd };
 
-        // --- Boundary Lines (longitudinal: outer, inner, and bottom inner edges) ---
-        const lineMat = new THREE.LineBasicMaterial({
-            color: 0xffff00,
-            transparent: true,
-            opacity: 0.85
-        });
+      wallVertices.push(
+        iEndL.x, 0, iEndL.z,
+        iEndL.x, iEndL.y, iEndL.z,
+        oEndL.x, 0, oEndL.z,
 
-        const xsLine = [startX, blsStartX, iaStartX, endX];
+        iEndL.x, iEndL.y, iEndL.z,
+        oEndL.x, oEndL.y, oEndL.z,
+        oEndL.x, 0, oEndL.z
+      );
 
-        const topOuterL = [];
-        const topOuterR = [];
-        const bottomInnerL = [];
-        const bottomInnerR = [];
+      // RIGHT trapezium (IAS side)
+      const iEndR = { x: xEnd, y: hEnd, z: -eEnd };
+      const oEndR = { x: xEnd, y: topHeight, z: -oEnd };
 
-        xsLine.forEach(x => {
-            const h = getHeight(x);
-            const e = getInnerEdgeHalf(x);
-            const o = getOuter(x, h, e);
+      wallVertices.push(
+        iEndR.x, 0, iEndR.z,
+        oEndR.x, 0, oEndR.z,
+        iEndR.x, iEndR.y, iEndR.z,
 
-            // LEFT side (positive Z)
-            topOuterL.push(new THREE.Vector3(x, topHeight, o));
-            bottomInnerL.push(new THREE.Vector3(x, h, e));
+        iEndR.x, iEndR.y, iEndR.z,
+        oEndR.x, 0, oEndR.z,
+        oEndR.x, oEndR.y, oEndR.z
+      );
 
-            // RIGHT side (negative Z)
-            topOuterR.push(new THREE.Vector3(x, topHeight, -o));
-            bottomInnerR.push(new THREE.Vector3(x, h, -e));
-        });
 
-        const makeLine = (pts) =>
+      const wallGeo = new THREE.BufferGeometry();
+      wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3));
+      wallGeo.computeVertexNormals();
+
+      const wallMesh = new THREE.Mesh(
+        wallGeo,
+        new THREE.MeshPhongMaterial({
+          color: 0xffff00,
+          transparent: true,
+          opacity: cfg.opacity * 0.7,
+          side: THREE.DoubleSide
+        })
+      );
+
+      // --- Boundary Lines (longitudinal: outer, inner, and bottom inner edges) ---
+      const lineMat = new THREE.LineBasicMaterial({
+        color: 0xffff00,
+        transparent: true,
+        opacity: 0.85
+      });
+
+      const xsLine = [startX, blsStartX, iaStartX, endX];
+
+      const topOuterL = [];
+      const topOuterR = [];
+      const bottomInnerL = [];
+      const bottomInnerR = [];
+
+      xsLine.forEach(x => {
+        const h = getHeight(x);
+        const e = getInnerEdgeHalf(x);
+        const o = getOuter(x, h, e);
+
+        // LEFT side (positive Z)
+        topOuterL.push(new THREE.Vector3(x, topHeight, o));
+        bottomInnerL.push(new THREE.Vector3(x, h, e));
+
+        // RIGHT side (negative Z)
+        topOuterR.push(new THREE.Vector3(x, topHeight, -o));
+        bottomInnerR.push(new THREE.Vector3(x, h, -e));
+      });
+
+      const makeLine = (pts) =>
         new THREE.Line(
-            new THREE.BufferGeometry().setFromPoints(pts),
-            lineMat
+          new THREE.BufferGeometry().setFromPoints(pts),
+          lineMat
         );
 
-        const lineGroup = new THREE.Group();
+      const lineGroup = new THREE.Group();
 
-        // longitudinal edges
-        lineGroup.add(
-            makeLine(topOuterL),
-            makeLine(topOuterR),
-            makeLine(bottomInnerL),
-            makeLine(bottomInnerR)
-        );
+      // longitudinal edges
+      lineGroup.add(
+        makeLine(topOuterL),
+        makeLine(topOuterR),
+        makeLine(bottomInnerL),
+        makeLine(bottomInnerR)
+      );
 
-        // --- ADD outer-end boundary lines (vertical closures) ---
-        const addEndLine = (x) => {
-            const h = getHeight(x);
-            const e = getInnerEdgeHalf(x);
-            const o = getOuter(x, h, e);
+      // --- ADD outer-end boundary lines (vertical closures) ---
+      const addEndLine = (x) => {
+        const h = getHeight(x);
+        const e = getInnerEdgeHalf(x);
+        const o = getOuter(x, h, e);
 
-            // LEFT vertical edge
-            lineGroup.add(makeLine([
-                new THREE.Vector3(x, h, e),
-                new THREE.Vector3(x, topHeight, o)
-            ]));
+        // LEFT vertical edge
+        lineGroup.add(makeLine([
+          new THREE.Vector3(x, h, e),
+          new THREE.Vector3(x, topHeight, o)
+        ]));
 
-            // RIGHT vertical edge
-            lineGroup.add(makeLine([
-                new THREE.Vector3(x, h, -e),
-                new THREE.Vector3(x, topHeight, -o)
-            ]));
-        };
-        // IAS outer end
-        addEndLine(endX);
-        // BLS far end
-        addEndLine(startX);
+        // RIGHT vertical edge
+        lineGroup.add(makeLine([
+          new THREE.Vector3(x, h, -e),
+          new THREE.Vector3(x, topHeight, -o)
+        ]));
+      };
+      // IAS outer end
+      addEndLine(endX);
+      // BLS far end
+      addEndLine(startX);
 
-        return { mesh, wallMesh, line: lineGroup };
+      return { mesh, wallMesh, line: lineGroup };
     }
 
     // --- MIRRORED (RWY 27) Inner Transitional Surface ---
     function createITSForRunway27(vScale) {
-        const cfg = CONFIG.innerTransitional;
-        const rHalf = CONFIG.runway.length / 2;
-        const ia = CONFIG.innerApproach;
+      const cfg = CONFIG.innerTransitional;
+      const rHalf = CONFIG.runway.length / 2;
+      const ia = CONFIG.innerApproach;
 
-        // Mirror everything along runway center
-        const iaStartX = -(rHalf + ia.distFromThreshold);
-        const iaEndX = iaStartX - ia.length;
+      // Mirror everything along runway center
+      const iaStartX = -(rHalf + ia.distFromThreshold);
+      const iaEndX = iaStartX - ia.length;
 
-        const blsStartX = -(rHalf - CONFIG.balkedLanding.distFromThreshold);
-        const blsEndX = blsStartX + CONFIG.balkedLanding.length;
+      const blsStartX = -(rHalf - CONFIG.balkedLanding.distFromThreshold);
+      const blsEndX = blsStartX + CONFIG.balkedLanding.length;
 
-        const startX = blsEndX;
-        const endX = iaEndX;
+      const startX = blsEndX;
+      const endX = iaEndX;
 
-        const getInnerEdgeHalf = (x) => {
-            if (x >= blsStartX) {
-                const dist = Math.max(0, x - blsStartX);
-                return (CONFIG.balkedLanding.innerEdge / 2) + (dist * CONFIG.balkedLanding.divergence);
-            }
-            if (x > iaStartX) {
-                return ia.innerEdge / 2;
-            }
-            return ia.innerEdge / 2;
-        };
+      const getInnerEdgeHalf = (x) => {
+        if (x >= blsStartX) {
+          const dist = Math.max(0, x - blsStartX);
+          return (CONFIG.balkedLanding.innerEdge / 2) + (dist * CONFIG.balkedLanding.divergence);
+        }
+        if (x > iaStartX) {
+          return ia.innerEdge / 2;
+        }
+        return ia.innerEdge / 2;
+      };
 
-        const topHeight = cfg.maxHeight * vScale;
+      const topHeight = cfg.maxHeight * vScale;
 
-        const vertices = [];
-        const addQuad = (v1, v2, v3, v4) => {
-            vertices.push(
-                v1.x, v1.y, v1.z,
-                v2.x, v2.y, v2.z,
-                v4.x, v4.y, v4.z
-            );
-            vertices.push(
-                v2.x, v2.y, v2.z,
-                v3.x, v3.y, v3.z,
-                v4.x, v4.y, v4.z
-            );
-        };
-        const slopeITS = 0.3333;
-        const runAt = (baseHeightScaled) => {
-            const baseHeightTrue = baseHeightScaled / vScale;
-            return (cfg.maxHeight - baseHeightTrue) / slopeITS;
-        };
-
-        const getHeight = (x) => {
-            if (x >= blsEndX) return CONFIG.balkedLanding.length * CONFIG.balkedLanding.slope * vScale;
-
-            if (x >= blsStartX) {
-                const dist = x - blsStartX;
-                return dist * CONFIG.balkedLanding.slope * vScale;
-            }
-
-            if (x > iaStartX) return 0;
-
-            const dist = iaStartX - x;
-            return Math.min(dist, ia.length) * ia.slope * vScale;
-        };
-        const getOuter = (x, baseH, innerE) => {
-            if (x < blsStartX && x > iaStartX) {
-                return innerE + runAt(0);
-            }
-            return innerE + runAt(baseH);
-        };
-
-        const buildSide = (side) => {
-            const xs = [startX, blsStartX, iaStartX, endX];
-
-            for (let i = 0; i < xs.length - 1; i++) {
-                const x1 = xs[i];
-                const x2 = xs[i + 1];
-
-                const h1y = getHeight(x1);
-                const h2y = getHeight(x2);
-
-                const e1 = getInnerEdgeHalf(x1);
-                const e2 = getInnerEdgeHalf(x2);
-
-                const h1 = { x: x1, y: h1y, z: e1 * side };
-                const h2 = { x: x2, y: h2y, z: e2 * side };
-
-                const o1 = { x: x1, y: topHeight, z: getOuter(x1, h1y, e1) * side };
-                const o2 = { x: x2, y: topHeight, z: getOuter(x2, h2y, e2) * side };
-
-                addQuad(h1, h2, o2, o1);
-            }
-        };
-
-        buildSide(1);
-        buildSide(-1);
-
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-        geo.computeVertexNormals();
-
-        const mesh = new THREE.Mesh(
-            geo,
-            new THREE.MeshPhongMaterial({
-                color: 0xffff00,
-                transparent: true,
-                opacity: cfg.opacity,
-                side: THREE.DoubleSide
-            })
+      const vertices = [];
+      const addQuad = (v1, v2, v3, v4) => {
+        vertices.push(
+          v1.x, v1.y, v1.z,
+          v2.x, v2.y, v2.z,
+          v4.x, v4.y, v4.z
         );
+        vertices.push(
+          v2.x, v2.y, v2.z,
+          v3.x, v3.y, v3.z,
+          v4.x, v4.y, v4.z
+        );
+      };
+      const slopeITS = 0.3333;
+      const runAt = (baseHeightScaled) => {
+        const baseHeightTrue = baseHeightScaled / vScale;
+        return (cfg.maxHeight - baseHeightTrue) / slopeITS;
+      };
 
-        // --- Add vertical walls along outer edges using the same xs points ---
-        const wallVertices = [];
+      const getHeight = (x) => {
+        if (x >= blsEndX) return CONFIG.balkedLanding.length * CONFIG.balkedLanding.slope * vScale;
 
-        const pushWall = (p1, p2) => {
-            wallVertices.push(
-                p1.x, 0, p1.z,
-                p1.x, p1.y, p1.z,
-                p2.x, 0, p2.z,
+        if (x >= blsStartX) {
+          const dist = x - blsStartX;
+          return dist * CONFIG.balkedLanding.slope * vScale;
+        }
 
-                p1.x, p1.y, p1.z,
-                p2.x, p2.y, p2.z,
-                p2.x, 0, p2.z
-            );
-        };
+        if (x > iaStartX) return 0;
 
+        const dist = iaStartX - x;
+        return Math.min(dist, ia.length) * ia.slope * vScale;
+      };
+      const getOuter = (x, baseH, innerE) => {
+        if (x < blsStartX && x > iaStartX) {
+          return innerE + runAt(0);
+        }
+        return innerE + runAt(baseH);
+      };
+
+      const buildSide = (side) => {
         const xs = [startX, blsStartX, iaStartX, endX];
+
         for (let i = 0; i < xs.length - 1; i++) {
-            const x1 = xs[i];
-            const x2 = xs[i + 1];
+          const x1 = xs[i];
+          const x2 = xs[i + 1];
 
-            const h1y = getHeight(x1);
-            const h2y = getHeight(x2);
+          const h1y = getHeight(x1);
+          const h2y = getHeight(x2);
 
-            const e1 = getInnerEdgeHalf(x1);
-            const e2 = getInnerEdgeHalf(x2);
+          const e1 = getInnerEdgeHalf(x1);
+          const e2 = getInnerEdgeHalf(x2);
 
-            // left (side=1)
-            const o1L = { x: x1, y: topHeight, z: getOuter(x1, h1y, e1) };
-            const o2L = { x: x2, y: topHeight, z: getOuter(x2, h2y, e2) };
-            pushWall(o1L, o2L);
-            // right (side=-1)
-            const o1R = { x: x1, y: topHeight, z: -getOuter(x1, h1y, e1) };
-            const o2R = { x: x2, y: topHeight, z: -getOuter(x2, h2y, e2) };
-            pushWall(o2R, o1R);
+          const h1 = { x: x1, y: h1y, z: e1 * side };
+          const h2 = { x: x2, y: h2y, z: e2 * side };
+
+          const o1 = { x: x1, y: topHeight, z: getOuter(x1, h1y, e1) * side };
+          const o2 = { x: x2, y: topHeight, z: getOuter(x2, h2y, e2) * side };
+
+          addQuad(h1, h2, o2, o1);
         }
+      };
 
-        // --- Add vertical walls along INNER edges (following IAS + BLS edges) ---
-        for (let i = 0; i < xs.length - 1; i++) {
-            const x1 = xs[i];
-            const x2 = xs[i + 1];
+      buildSide(1);
+      buildSide(-1);
 
-            const h1y = getHeight(x1);
-            const h2y = getHeight(x2);
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+      geo.computeVertexNormals();
 
-            const e1 = getInnerEdgeHalf(x1);
-            const e2 = getInnerEdgeHalf(x2);
+      const mesh = new THREE.Mesh(
+        geo,
+        new THREE.MeshPhongMaterial({
+          color: 0xffff00,
+          transparent: true,
+          opacity: cfg.opacity,
+          side: THREE.DoubleSide
+        })
+      );
 
-            // left inner wall
-            const i1L = { x: x1, y: h1y, z: e1 };
-            const i2L = { x: x2, y: h2y, z: e2 };
-            pushWall(i1L, i2L);
+      // --- Add vertical walls along outer edges using the same xs points ---
+      const wallVertices = [];
 
-            // right inner wall
-            const i1R = { x: x1, y: h1y, z: -e1 };
-            const i2R = { x: x2, y: h2y, z: -e2 };
-            pushWall(i2R, i1R);
-        }
-
-        // --- Add trapezium walls at IAS outer end (closing sides only) ---
-        const xEnd = endX;
-        const hEnd = getHeight(xEnd);
-        const eEnd = getInnerEdgeHalf(xEnd);
-
-        const oEnd = getOuter(xEnd, hEnd, eEnd);
-
-        // LEFT trapezium (IAS side)
-        const iEndL = { x: xEnd, y: hEnd, z: eEnd };
-        const oEndL = { x: xEnd, y: topHeight, z: oEnd };
-
+      const pushWall = (p1, p2) => {
         wallVertices.push(
-            iEndL.x, 0, iEndL.z,
-            iEndL.x, iEndL.y, iEndL.z,
-            oEndL.x, 0, oEndL.z,
+          p1.x, 0, p1.z,
+          p1.x, p1.y, p1.z,
+          p2.x, 0, p2.z,
 
-            iEndL.x, iEndL.y, iEndL.z,
-            oEndL.x, oEndL.y, oEndL.z,
-            oEndL.x, 0, oEndL.z
+          p1.x, p1.y, p1.z,
+          p2.x, p2.y, p2.z,
+          p2.x, 0, p2.z
+        );
+      };
+
+      const xs = [startX, blsStartX, iaStartX, endX];
+      for (let i = 0; i < xs.length - 1; i++) {
+        const x1 = xs[i];
+        const x2 = xs[i + 1];
+
+        const h1y = getHeight(x1);
+        const h2y = getHeight(x2);
+
+        const e1 = getInnerEdgeHalf(x1);
+        const e2 = getInnerEdgeHalf(x2);
+
+        // left (side=1)
+        const o1L = { x: x1, y: topHeight, z: getOuter(x1, h1y, e1) };
+        const o2L = { x: x2, y: topHeight, z: getOuter(x2, h2y, e2) };
+        pushWall(o1L, o2L);
+        // right (side=-1)
+        const o1R = { x: x1, y: topHeight, z: -getOuter(x1, h1y, e1) };
+        const o2R = { x: x2, y: topHeight, z: -getOuter(x2, h2y, e2) };
+        pushWall(o2R, o1R);
+      }
+
+      // --- Add vertical walls along INNER edges (following IAS + BLS edges) ---
+      for (let i = 0; i < xs.length - 1; i++) {
+        const x1 = xs[i];
+        const x2 = xs[i + 1];
+
+        const h1y = getHeight(x1);
+        const h2y = getHeight(x2);
+
+        const e1 = getInnerEdgeHalf(x1);
+        const e2 = getInnerEdgeHalf(x2);
+
+        // left inner wall
+        const i1L = { x: x1, y: h1y, z: e1 };
+        const i2L = { x: x2, y: h2y, z: e2 };
+        pushWall(i1L, i2L);
+
+        // right inner wall
+        const i1R = { x: x1, y: h1y, z: -e1 };
+        const i2R = { x: x2, y: h2y, z: -e2 };
+        pushWall(i2R, i1R);
+      }
+
+      // --- Add trapezium walls at IAS outer end (closing sides only) ---
+      const xEnd = endX;
+      const hEnd = getHeight(xEnd);
+      const eEnd = getInnerEdgeHalf(xEnd);
+
+      const oEnd = getOuter(xEnd, hEnd, eEnd);
+
+      // LEFT trapezium (IAS side)
+      const iEndL = { x: xEnd, y: hEnd, z: eEnd };
+      const oEndL = { x: xEnd, y: topHeight, z: oEnd };
+
+      wallVertices.push(
+        iEndL.x, 0, iEndL.z,
+        iEndL.x, iEndL.y, iEndL.z,
+        oEndL.x, 0, oEndL.z,
+
+        iEndL.x, iEndL.y, iEndL.z,
+        oEndL.x, oEndL.y, oEndL.z,
+        oEndL.x, 0, oEndL.z
+      );
+
+      // RIGHT trapezium (IAS side)
+      const iEndR = { x: xEnd, y: hEnd, z: -eEnd };
+      const oEndR = { x: xEnd, y: topHeight, z: -oEnd };
+
+      wallVertices.push(
+        iEndR.x, 0, iEndR.z,
+        oEndR.x, 0, oEndR.z,
+        iEndR.x, iEndR.y, iEndR.z,
+
+        iEndR.x, iEndR.y, iEndR.z,
+        oEndR.x, 0, oEndR.z,
+        oEndR.x, oEndR.y, oEndR.z
+      );
+
+      const wallGeo = new THREE.BufferGeometry();
+      wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3));
+      wallGeo.computeVertexNormals();
+
+      const wallMesh = new THREE.Mesh(
+        wallGeo,
+        new THREE.MeshPhongMaterial({
+          color: 0xffff00,
+          transparent: true,
+          opacity: cfg.opacity * 0.7,
+          side: THREE.DoubleSide
+        })
+      );
+
+      // --- Boundary Lines (longitudinal: outer, inner, and bottom inner edges) ---
+      const lineMat = new THREE.LineBasicMaterial({
+        color: 0xffff00,
+        transparent: true,
+        opacity: 0.85
+      });
+
+      const xsLine = [startX, blsStartX, iaStartX, endX];
+
+      const topOuterL = [];
+      const topOuterR = [];
+      const bottomInnerL = [];
+      const bottomInnerR = [];
+
+      xsLine.forEach(x => {
+        const h = getHeight(x);
+        const e = getInnerEdgeHalf(x);
+        const o = getOuter(x, h, e);
+
+        // LEFT side (positive Z)
+        topOuterL.push(new THREE.Vector3(x, topHeight, o));
+        bottomInnerL.push(new THREE.Vector3(x, h, e));
+
+        // RIGHT side (negative Z)
+        topOuterR.push(new THREE.Vector3(x, topHeight, -o));
+        bottomInnerR.push(new THREE.Vector3(x, h, -e));
+      });
+
+      const makeLine = (pts) =>
+        new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints(pts),
+          lineMat
         );
 
-        // RIGHT trapezium (IAS side)
-        const iEndR = { x: xEnd, y: hEnd, z: -eEnd };
-        const oEndR = { x: xEnd, y: topHeight, z: -oEnd };
+      const lineGroup = new THREE.Group();
 
-        wallVertices.push(
-            iEndR.x, 0, iEndR.z,
-            oEndR.x, 0, oEndR.z,
-            iEndR.x, iEndR.y, iEndR.z,
+      // longitudinal edges
+      lineGroup.add(
+        makeLine(topOuterL),
+        makeLine(topOuterR),
+        makeLine(bottomInnerL),
+        makeLine(bottomInnerR)
+      );
 
-            iEndR.x, iEndR.y, iEndR.z,
-            oEndR.x, 0, oEndR.z,
-            oEndR.x, oEndR.y, oEndR.z
-        );
+      // --- ADD outer-end boundary lines (vertical closures) ---
+      const addEndLine = (x) => {
+        const h = getHeight(x);
+        const e = getInnerEdgeHalf(x);
+        const o = getOuter(x, h, e);
 
-        const wallGeo = new THREE.BufferGeometry();
-        wallGeo.setAttribute('position', new THREE.Float32BufferAttribute(wallVertices, 3));
-        wallGeo.computeVertexNormals();
+        // LEFT vertical edge
+        lineGroup.add(makeLine([
+          new THREE.Vector3(x, h, e),
+          new THREE.Vector3(x, topHeight, o)
+        ]));
 
-        const wallMesh = new THREE.Mesh(
-            wallGeo,
-            new THREE.MeshPhongMaterial({
-                color: 0xffff00,
-                transparent: true,
-                opacity: cfg.opacity * 0.7,
-                side: THREE.DoubleSide
-            })
-        );
+        // RIGHT vertical edge
+        lineGroup.add(makeLine([
+          new THREE.Vector3(x, h, -e),
+          new THREE.Vector3(x, topHeight, -o)
+        ]));
+      };
+      // IAS outer end
+      addEndLine(endX);
+      // BLS far end
+      addEndLine(startX);
 
-        // --- Boundary Lines (longitudinal: outer, inner, and bottom inner edges) ---
-        const lineMat = new THREE.LineBasicMaterial({
-            color: 0xffff00,
-            transparent: true,
-            opacity: 0.85
-        });
-
-        const xsLine = [startX, blsStartX, iaStartX, endX];
-
-        const topOuterL = [];
-        const topOuterR = [];
-        const bottomInnerL = [];
-        const bottomInnerR = [];
-
-        xsLine.forEach(x => {
-            const h = getHeight(x);
-            const e = getInnerEdgeHalf(x);
-            const o = getOuter(x, h, e);
-
-            // LEFT side (positive Z)
-            topOuterL.push(new THREE.Vector3(x, topHeight, o));
-            bottomInnerL.push(new THREE.Vector3(x, h, e));
-
-            // RIGHT side (negative Z)
-            topOuterR.push(new THREE.Vector3(x, topHeight, -o));
-            bottomInnerR.push(new THREE.Vector3(x, h, -e));
-        });
-
-        const makeLine = (pts) =>
-            new THREE.Line(
-                new THREE.BufferGeometry().setFromPoints(pts),
-                lineMat
-            );
-
-        const lineGroup = new THREE.Group();
-
-        // longitudinal edges
-        lineGroup.add(
-            makeLine(topOuterL),
-            makeLine(topOuterR),
-            makeLine(bottomInnerL),
-            makeLine(bottomInnerR)
-        );
-
-        // --- ADD outer-end boundary lines (vertical closures) ---
-        const addEndLine = (x) => {
-            const h = getHeight(x);
-            const e = getInnerEdgeHalf(x);
-            const o = getOuter(x, h, e);
-
-            // LEFT vertical edge
-            lineGroup.add(makeLine([
-                new THREE.Vector3(x, h, e),
-                new THREE.Vector3(x, topHeight, o)
-            ]));
-
-            // RIGHT vertical edge
-            lineGroup.add(makeLine([
-                new THREE.Vector3(x, h, -e),
-                new THREE.Vector3(x, topHeight, -o)
-            ]));
-        };
-        // IAS outer end
-        addEndLine(endX);
-        // BLS far end
-        addEndLine(startX);
-
-        return { mesh, wallMesh: new THREE.Group(), line: new THREE.Group(), mesh, wallMesh, line: lineGroup };
+      return { mesh, wallMesh: new THREE.Group(), line: new THREE.Group(), mesh, wallMesh, line: lineGroup };
     }
 
     let OLS_REFS = {};
 
-function rebuildSurfaces(skipFit = false) {
-      while(olsGroup.children.length > 0){ olsGroup.remove(olsGroup.children[0]); }
-      
+    function rebuildSurfaces(skipFit = false) {
+      while (olsGroup.children.length > 0) { olsGroup.remove(olsGroup.children[0]); }
+
       OLS_REFS.ihs = generateIHS(currentVScale);
       OLS_REFS.conical = generateConical(currentVScale);
       OLS_REFS.ohs = generateOHS(currentVScale);
       OLS_REFS.trans = generateTransitional(currentVScale);
-      
-      const t1 = createSingleTakeOff(1, currentVScale);
+
+      // NOTE: Side swapped to match correct runway orientation
+
+      // RWY 09 takeoff climbs toward negative X
+      const t1 = createSingleTakeOff(-1, currentVScale);
       OLS_REFS.takeoff1 = t1; olsGroup.add(t1.mesh, t1.wallMesh, t1.line);
-      const t2 = createSingleTakeOff(-1, currentVScale);
+
+      // RWY 27 takeoff climbs toward positive X
+      const t2 = createSingleTakeOff(1, currentVScale);
       OLS_REFS.takeoff2 = t2; olsGroup.add(t2.mesh, t2.wallMesh, t2.line);
-      
-      const a1 = createSingleApproach(1, currentVScale);
+
+      // RWY 09 approach extends toward negative X
+      const a1 = createSingleApproach(-1, currentVScale);
       OLS_REFS.appr1 = a1; olsGroup.add(a1.mesh, a1.wallMesh, a1.line);
-      const a2 = createSingleApproach(-1, currentVScale);
+
+      // RWY 27 approach extends toward positive X
+      const a2 = createSingleApproach(1, currentVScale);
       OLS_REFS.appr2 = a2; olsGroup.add(a2.mesh, a2.wallMesh, a2.line);
-      
-      const ia1 = createSingleInnerApproach(1, currentVScale);
+
+      // RWY 09 inner approach
+      const ia1 = createSingleInnerApproach(-1, currentVScale);
       OLS_REFS.ia1 = ia1; olsGroup.add(ia1.mesh, ia1.wallMesh, ia1.line);
-      const ia2 = createSingleInnerApproach(-1, currentVScale);
+
+      // RWY 27 inner approach
+      const ia2 = createSingleInnerApproach(1, currentVScale);
       OLS_REFS.ia2 = ia2; olsGroup.add(ia2.mesh, ia2.wallMesh, ia2.line);
 
-      const bls1 = createSingleBalkedLanding(1, currentVScale);
+      // RWY 09 balked landing
+      const bls1 = createSingleBalkedLanding(-1, currentVScale);
       OLS_REFS.bls1 = bls1; olsGroup.add(bls1.mesh, bls1.wallMesh, bls1.line);
-      const bls2 = createSingleBalkedLanding(-1, currentVScale);
+
+      // RWY 27 balked landing
+      const bls2 = createSingleBalkedLanding(1, currentVScale);
       OLS_REFS.bls2 = bls2; olsGroup.add(bls2.mesh, bls2.wallMesh, bls2.line);
 
-      const its1 = createITSForRunway(currentVScale);
-      const its2 = createITSForRunway27(currentVScale);
+      // RWY 09 surfaces must use the negative-X mirrored geometry
+      // RWY 27 surfaces must use the positive-X geometry
+      const its1 = createITSForRunway27(currentVScale);
+      const its2 = createITSForRunway(currentVScale);
 
       OLS_REFS.its1 = its1;
       OLS_REFS.its2 = its2;
 
       olsGroup.add(its1.mesh, its1.wallMesh, its1.line);
       olsGroup.add(its2.mesh, its2.wallMesh, its2.line);
-      
+
       applyDepthFix(olsGroup);
       applyAllOpacities();
       updateOLSVisibility();
@@ -1825,8 +2836,8 @@ function rebuildSurfaces(skipFit = false) {
       animateCamera(targetPos, center);
     }
 
-    window.toggleLayerUI = () => { 
-      const p = document.getElementById('layer-panel'); p.style.display = (p.style.display === 'block') ? 'none' : 'block'; 
+    window.toggleLayerUI = () => {
+      const p = document.getElementById('layer-panel'); p.style.display = (p.style.display === 'block') ? 'none' : 'block';
     };
 
     window.updateOpacity = (surface) => {
@@ -1843,7 +2854,7 @@ function rebuildSurfaces(skipFit = false) {
       else if (surface === 'InnerAppr2') { OLS_REFS.ia2.mesh.material.opacity = val; OLS_REFS.ia2.wallMesh.material.opacity = val * 0.7; }
       else if (surface === 'BLS') { OLS_REFS.bls1.mesh.material.opacity = val; OLS_REFS.bls2.mesh.material.opacity = val; OLS_REFS.bls1.wallMesh.material.opacity = val * 0.7; OLS_REFS.bls2.wallMesh.material.opacity = val * 0.7; }
       else if (surface === 'BLS2') { OLS_REFS.bls2.mesh.material.opacity = val; OLS_REFS.bls2.wallMesh.material.opacity = val * 0.7; }
-      else if (surface === 'Trans') { [OLS_REFS.trans.g09, OLS_REFS.trans.g27, OLS_REFS.trans.gCentral].forEach(g => { if(g){ g.children[0].material.opacity = val; g.children[1].material.opacity = val * 0.7; }}); }
+      else if (surface === 'Trans') { [OLS_REFS.trans.g09, OLS_REFS.trans.g27, OLS_REFS.trans.gCentral].forEach(g => { if (g) { g.children[0].material.opacity = val; g.children[1].material.opacity = val * 0.7; } }); }
       else if (surface === 'Trans27') {
         OLS_REFS.trans.g27.children[0].material.opacity = val;
         OLS_REFS.trans.g27.children[1].material.opacity = val * 0.7;
@@ -1861,13 +2872,13 @@ function rebuildSurfaces(skipFit = false) {
 
     function applyAllOpacities() {
       const surfaces = [
-        'IHS','Conical','OHS',
-        'TakeOff','TakeOff2',
-        'Appr','Appr2',
-        'InnerAppr','InnerAppr2',
-        'BLS','BLS2',
-        'Trans','Trans27',
-        'ITS','ITS2'
+        'IHS', 'Conical', 'OHS',
+        'TakeOff', 'TakeOff2',
+        'Appr', 'Appr2',
+        'InnerAppr', 'InnerAppr2',
+        'BLS', 'BLS2',
+        'Trans', 'Trans27',
+        'ITS', 'ITS2'
       ];
 
       surfaces.forEach(s => {
@@ -1893,37 +2904,37 @@ function rebuildSurfaces(skipFit = false) {
         if (slider) slider.disabled = !chk.checked;
       };
       [OLS_REFS.ihs.mesh, OLS_REFS.ihs.walls, OLS_REFS.ihs.lines].forEach(m => m.visible = getV('chkIHS'));
-      setSliderState('chkIHS','opIHS');
+      setSliderState('chkIHS', 'opIHS');
       [OLS_REFS.conical.mesh, OLS_REFS.conical.walls, OLS_REFS.conical.innerWalls, OLS_REFS.conical.lines].forEach(m => m.visible = getV('chkConical'));
-      setSliderState('chkConical','opConical');
+      setSliderState('chkConical', 'opConical');
       [OLS_REFS.ohs.mesh, OLS_REFS.ohs.walls, OLS_REFS.ohs.lines].forEach(m => m.visible = getV('chkOHS'));
-      setSliderState('chkOHS','opOHS');
+      setSliderState('chkOHS', 'opOHS');
       [OLS_REFS.takeoff1.mesh, OLS_REFS.takeoff1.wallMesh, OLS_REFS.takeoff1.line].forEach(m => m.visible = getV('chkTakeOff1'));
-      setSliderState('chkTakeOff1','opTakeOff');
+      setSliderState('chkTakeOff1', 'opTakeOff');
       [OLS_REFS.takeoff2.mesh, OLS_REFS.takeoff2.wallMesh, OLS_REFS.takeoff2.line].forEach(m => m.visible = getV('chkTakeOff2'));
-      setSliderState('chkTakeOff2','opTakeOff2');
+      setSliderState('chkTakeOff2', 'opTakeOff2');
       [OLS_REFS.appr1.mesh, OLS_REFS.appr1.wallMesh, OLS_REFS.appr1.line].forEach(m => m.visible = getV('chkAppr1'));
-      setSliderState('chkAppr1','opAppr');
+      setSliderState('chkAppr1', 'opAppr');
       [OLS_REFS.appr2.mesh, OLS_REFS.appr2.wallMesh, OLS_REFS.appr2.line].forEach(m => m.visible = getV('chkAppr2'));
-      setSliderState('chkAppr2','opAppr2');
+      setSliderState('chkAppr2', 'opAppr2');
       [OLS_REFS.ia1.mesh, OLS_REFS.ia1.wallMesh, OLS_REFS.ia1.line].forEach(m => m.visible = getV('chkInnerAppr1'));
-      setSliderState('chkInnerAppr1','opInnerAppr');
+      setSliderState('chkInnerAppr1', 'opInnerAppr');
       [OLS_REFS.ia2.mesh, OLS_REFS.ia2.wallMesh, OLS_REFS.ia2.line].forEach(m => m.visible = getV('chkInnerAppr2'));
-      setSliderState('chkInnerAppr2','opInnerAppr2');
+      setSliderState('chkInnerAppr2', 'opInnerAppr2');
       [OLS_REFS.bls1.mesh, OLS_REFS.bls1.wallMesh, OLS_REFS.bls1.line].forEach(m => m.visible = getV('chkBLS1'));
-      setSliderState('chkBLS1','opBLS');
+      setSliderState('chkBLS1', 'opBLS');
       [OLS_REFS.bls2.mesh, OLS_REFS.bls2.wallMesh, OLS_REFS.bls2.line].forEach(m => m.visible = getV('chkBLS2'));
-      setSliderState('chkBLS2','opBLS2');
+      setSliderState('chkBLS2', 'opBLS2');
       [OLS_REFS.its1.mesh, OLS_REFS.its1.wallMesh, OLS_REFS.its1.line]
         .forEach(m => m.visible = getV('chkITS1'));
-      setSliderState('chkITS1','opITS');
+      setSliderState('chkITS1', 'opITS');
       [OLS_REFS.its2.mesh, OLS_REFS.its2.wallMesh, OLS_REFS.its2.line]
         .forEach(m => m.visible = getV('chkITS2'));
-      setSliderState('chkITS2','opITS2');
-      OLS_REFS.trans.g09.visible = getV('chkTrans09'); 
-      setSliderState('chkTrans09','opTrans');
+      setSliderState('chkITS2', 'opITS2');
+      OLS_REFS.trans.g09.visible = getV('chkTrans09');
+      setSliderState('chkTrans09', 'opTrans');
       OLS_REFS.trans.g27.visible = getV('chkTrans27');
-      setSliderState('chkTrans27','opTrans27');
+      setSliderState('chkTrans27', 'opTrans27');
       OLS_REFS.trans.gCentral.visible = getV('chkTrans09') || getV('chkTrans27');
       updateRunwayGroupState('09');
       updateRunwayGroupState('27');
@@ -1937,8 +2948,8 @@ function rebuildSurfaces(skipFit = false) {
       const parent = document.getElementById(is09 ? 'chkRwy09' : 'chkRwy27');
 
       const ids = is09
-        ? ['chkTrans09','chkITS1','chkTakeOff1','chkAppr1','chkInnerAppr1','chkBLS1']
-        : ['chkTrans27','chkITS2','chkTakeOff2','chkAppr2','chkInnerAppr2','chkBLS2'];
+        ? ['chkTrans09', 'chkITS1', 'chkTakeOff1', 'chkAppr1', 'chkInnerAppr1', 'chkBLS1']
+        : ['chkTrans27', 'chkITS2', 'chkTakeOff2', 'chkAppr2', 'chkInnerAppr2', 'chkBLS2'];
 
       const states = ids.map(id => document.getElementById(id).checked);
 
@@ -1951,7 +2962,7 @@ function rebuildSurfaces(skipFit = false) {
 
     function updateCommonGroupState() {
       const parent = document.getElementById('chkCommon');
-      const ids = ['chkIHS','chkConical','chkOHS'];
+      const ids = ['chkIHS', 'chkConical', 'chkOHS'];
 
       const states = ids.map(id => document.getElementById(id).checked);
 
@@ -1967,8 +2978,8 @@ function rebuildSurfaces(skipFit = false) {
       const parent = document.getElementById(is09 ? 'chkOFZ09' : 'chkOFZ27');
 
       const ids = is09
-        ? ['chkInnerAppr1','chkBLS1','chkITS1']
-        : ['chkInnerAppr2','chkBLS2','chkITS2'];
+        ? ['chkInnerAppr1', 'chkBLS1', 'chkITS1']
+        : ['chkInnerAppr2', 'chkBLS2', 'chkITS2'];
 
       const states = ids.map(id => document.getElementById(id).checked);
 
@@ -1984,8 +2995,8 @@ function rebuildSurfaces(skipFit = false) {
       const master = document.getElementById(is09 ? 'chkRwy09' : 'chkRwy27').checked;
 
       const ids = is09
-        ? ['chkTrans09','chkITS1','chkTakeOff1','chkAppr1','chkInnerAppr1','chkBLS1']
-        : ['chkTrans27','chkITS2','chkTakeOff2','chkAppr2','chkInnerAppr2','chkBLS2'];
+        ? ['chkTrans09', 'chkITS1', 'chkTakeOff1', 'chkAppr1', 'chkInnerAppr1', 'chkBLS1']
+        : ['chkTrans27', 'chkITS2', 'chkTakeOff2', 'chkAppr2', 'chkInnerAppr2', 'chkBLS2'];
 
       ids.forEach(id => {
         document.getElementById(id).checked = master;
@@ -2001,13 +3012,13 @@ function rebuildSurfaces(skipFit = false) {
       if (zoomLabel) zoomLabel.innerText = '4x';
       // Set default slider values and labels
       const defaultOpacity = {
-        IHS:20, Conical:40, OHS:20,
-        Appr:40, Appr2:40,
-        TakeOff:60, TakeOff2:60,
-        Trans:80, Trans27:80,
-        InnerAppr:40, InnerAppr2:40,
-        BLS:60, BLS2:60,
-        ITS:60, ITS2:60
+        IHS: 20, Conical: 40, OHS: 20,
+        Appr: 40, Appr2: 40,
+        TakeOff: 60, TakeOff2: 60,
+        Trans: 80, Trans27: 80,
+        InnerAppr: 40, InnerAppr2: 40,
+        BLS: 60, BLS2: 60,
+        ITS: 60, ITS2: 60
       };
       Object.keys(defaultOpacity).forEach(key => {
         const slider = document.getElementById('op' + key);
@@ -2024,7 +3035,7 @@ function rebuildSurfaces(skipFit = false) {
       updateOLSVisibility();
 
       // Collapse all groups and reset icons consistently
-      const groups = ['commonGroup','rwy09Group','rwy27Group','ofz09','ofz27'];
+      const groups = ['commonGroup', 'rwy09Group', 'rwy27Group', 'ofz09', 'ofz27'];
 
       groups.forEach(id => {
         const el = document.getElementById(id);
@@ -2068,81 +3079,80 @@ function rebuildSurfaces(skipFit = false) {
     animate();
   </script>
   <script>
-  // Collapsible section toggler (legacy, but still present for any old calls)
-  window.toggleSection = (id) => {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
-  };
-
-  // New: Collapsible section toggler with +/− icon on right
-  window.toggleSectionWithIcon = (id, el, event) => {
-    if (!event) return;
-
-    const target = event.target;
-
-    // If checkbox clicked → do nothing here (handled separately)
-    if (target.tagName === 'INPUT') return;
-
-    // If label text clicked → prevent checkbox toggle
-    if (target.closest('label')) {
-      event.preventDefault();
-    }
-
-    const section = document.getElementById(id);
-    if (!section) return;
-
-    const isHidden = section.style.display === 'none' || section.style.display === '';
-    section.style.display = isHidden ? 'block' : 'none';
-
-    if (el) el.innerText = isHidden ? '−' : '+';
-  };
-
-  // New: Toggle all Common Surfaces from group checkbox
-  window.toggleCommonGroup = () => {
-    const master = document.getElementById('chkCommon').checked;
-    ['chkIHS','chkConical','chkOHS'].forEach(id => {
+    // Collapsible section toggler (legacy, but still present for any old calls)
+    window.toggleSection = (id) => {
       const el = document.getElementById(id);
-      if (el) el.checked = master;
+      if (!el) return;
+      el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
+    };
+
+    // New: Collapsible section toggler with +/− icon on right
+    window.toggleSectionWithIcon = (id, el, event) => {
+      if (!event) return;
+
+      const target = event.target;
+
+      // If checkbox clicked → do nothing here (handled separately)
+      if (target.tagName === 'INPUT') return;
+
+      // If label text clicked → prevent checkbox toggle
+      if (target.closest('label')) {
+        event.preventDefault();
+      }
+
+      const section = document.getElementById(id);
+      if (!section) return;
+
+      const isHidden = section.style.display === 'none' || section.style.display === '';
+      section.style.display = isHidden ? 'block' : 'none';
+
+      if (el) el.innerText = isHidden ? '−' : '+';
+    };
+
+    // New: Toggle all Common Surfaces from group checkbox
+    window.toggleCommonGroup = () => {
+      const master = document.getElementById('chkCommon').checked;
+      ['chkIHS', 'chkConical', 'chkOHS'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.checked = master;
+      });
+      updateOLSVisibility();
+    };
+
+    // New: Toggle all OFZ surfaces for a runway from group checkbox
+    window.toggleOFZGroup = (rwy) => {
+      const is09 = rwy === '09';
+      const master = document.getElementById(is09 ? 'chkOFZ09' : 'chkOFZ27').checked;
+
+      const ids = is09
+        ? ['chkInnerAppr1', 'chkBLS1', 'chkITS1']
+        : ['chkInnerAppr2', 'chkBLS2', 'chkITS2'];
+
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.checked = master;
+      });
+
+      updateOLSVisibility();
+    };
+
+    // Close layer panel when clicking outside
+    document.addEventListener('pointerdown', function (e) {
+      const panel = document.getElementById('layer-panel');
+      const btn = document.getElementById('layer-toggle-btn');
+
+      if (!panel || !btn) return;
+
+      const isClickInside = panel.contains(e.target) || btn.contains(e.target);
+
+      if (!isClickInside) {
+        panel.style.display = 'none';
+      }
     });
-    updateOLSVisibility();
-  };
-
-  // New: Toggle all OFZ surfaces for a runway from group checkbox
-  window.toggleOFZGroup = (rwy) => {
-    const is09 = rwy === '09';
-    const master = document.getElementById(is09 ? 'chkOFZ09' : 'chkOFZ27').checked;
-
-    const ids = is09
-      ? ['chkInnerAppr1','chkBLS1','chkITS1']
-      : ['chkInnerAppr2','chkBLS2','chkITS2'];
-
-    ids.forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.checked = master;
-    });
-
-    updateOLSVisibility();
-  };
-
-  // Close layer panel when clicking outside
-document.addEventListener('pointerdown', function(e) {
-  const panel = document.getElementById('layer-panel');
-  const btn = document.getElementById('layer-toggle-btn');
-
-  if (!panel || !btn) return;
-
-  const isClickInside = panel.contains(e.target) || btn.contains(e.target);
-
-  if (!isClickInside) {
-    panel.style.display = 'none';
-  }
-});
   </script>
   <div id="status-bar">
     © Made by Deep Gulati
   </div>
 </body>
-</html>
 
-    
+</html>
