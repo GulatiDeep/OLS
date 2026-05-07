@@ -847,11 +847,12 @@
     let obstacleJustActivated = false;
     let obstacleMesh = null;
     let obstacleLabel = null;
-    let obstacleHeightMeters = 30;
+let obstacleHeightMeters = 30;
+let obstacleActivationTime = 0;
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    window.activateObstacleMode = () => {
+window.activateObstacleMode = () => {
       // Toggle OFF if obstacle placement mode is active
       if (obstacleMode) {
         obstacleMode = false;
@@ -880,6 +881,7 @@
 
       obstacleMode = true;
       obstacleJustActivated = true;
+      obstacleActivationTime = performance.now();
 
       const obstacleBtn = document.getElementById('obstacle-btn');
       if (obstacleBtn) {
@@ -1015,10 +1017,17 @@
       }
     });
 
-    window.addEventListener('pointerdown', (event) => {
+window.addEventListener('pointerdown', (event) => {
       if (!obstacleMode || !obstacleMesh) return;
       const obstacleBtn = document.getElementById('obstacle-btn');
       if (obstacleJustActivated) return;
+      // Prevent mobile touch from instantly placing obstacle
+      if (
+        event.pointerType === 'touch' &&
+        performance.now() - obstacleActivationTime < 500
+      ) {
+        return;
+      }
 
       // If obstacle button is clicked again while placement mode is active,
       // pointerdown can fire on the button itself. Ignore UI clicks.
