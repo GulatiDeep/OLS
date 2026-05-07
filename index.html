@@ -66,6 +66,34 @@
       top: 152px;
     }
 
+    #restore-analysis-btn {
+      position: absolute;
+      left: 20px;
+      top: 218px;
+      width: 52px;
+      height: 52px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(40, 44, 52, 0.92);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      color: #00d4ff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 110;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+
+    #restore-analysis-btn:hover {
+      background: rgba(60, 64, 72, 0.95);
+      border-color: #00d4ff;
+      transform: translateY(-1px);
+    }
+
     /* Mobile Optimization */
     @media (max-width: 768px) {
 
@@ -531,6 +559,10 @@
     </svg>
   </div>
 
+  <div id="restore-analysis-btn" onclick="restoreObstacleAnalysis()" title="Restore Analysis">
+    VIEW
+  </div>
+
   <div id="compass">
     <div id="north-marker">
       <div id="north-arrow">
@@ -847,12 +879,14 @@
     let obstacleJustActivated = false;
     let obstacleMesh = null;
     let obstacleLabel = null;
-let obstacleHeightMeters = 30;
-let obstacleActivationTime = 0;
+    let obstacleLabelMinimized = false;
+    let obstacleStatusCallout = null;
+    let obstacleHeightMeters = 30;
+    let obstacleActivationTime = 0;
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-window.activateObstacleMode = () => {
+    window.activateObstacleMode = () => {
       // Toggle OFF if obstacle placement mode is active
       if (obstacleMode) {
         obstacleMode = false;
@@ -870,7 +904,15 @@ window.activateObstacleMode = () => {
           obstacleLabel.remove();
           obstacleLabel = null;
         }
-
+        let restoreBtn =
+          document.getElementById('restore-analysis-btn');
+        if (restoreBtn) {
+          restoreBtn.style.display = 'none';
+        }
+        if (obstacleStatusCallout) {
+          obstacleStatusCallout.remove();
+          obstacleStatusCallout = null;
+        }
         if (obstacleMesh) {
           scene.remove(obstacleMesh);
           obstacleMesh = null;
@@ -896,7 +938,15 @@ window.activateObstacleMode = () => {
         obstacleLabel.remove();
         obstacleLabel = null;
       }
-
+      restoreBtn =
+        document.getElementById('restore-analysis-btn');
+      if (restoreBtn) {
+        restoreBtn.style.display = 'none';
+      }
+      if (obstacleStatusCallout) {
+        obstacleStatusCallout.remove();
+        obstacleStatusCallout = null;
+      }
       if (obstacleMesh) {
         scene.remove(obstacleMesh);
         obstacleMesh = null;
@@ -1000,49 +1050,60 @@ window.activateObstacleMode = () => {
       }, 200);
     };
 
-    window.addEventListener('pointermove', (event) => {
-      if (!obstacleMode || !obstacleMesh) return;
+function updateObstaclePosition(clientX, clientY) {
 
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  if (!obstacleMode || !obstacleMesh) return;
 
-      raycaster.setFromCamera(mouse, camera);
+  mouse.x = (clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(clientY / window.innerHeight) * 2 + 1;
 
-      const intersectPoint = new THREE.Vector3();
-      raycaster.ray.intersectPlane(groundPlane, intersectPoint);
+  raycaster.setFromCamera(mouse, camera);
 
-      if (intersectPoint) {
-        obstacleMesh.position.copy(intersectPoint);
-        obstacleMesh.position.y = 0;
-      }
-    });
+  const intersectPoint = new THREE.Vector3();
+  raycaster.ray.intersectPlane(groundPlane, intersectPoint);
+
+  if (intersectPoint) {
+    obstacleMesh.position.copy(intersectPoint);
+    obstacleMesh.position.y = 0;
+  }
+}
+
+window.addEventListener('pointermove', (event) => {
+  updateObstaclePosition(event.clientX, event.clientY);
+});
 
 window.addEventListener('pointerdown', (event) => {
-      if (!obstacleMode || !obstacleMesh) return;
-      const obstacleBtn = document.getElementById('obstacle-btn');
-      if (obstacleJustActivated) return;
-      // Prevent mobile touch from instantly placing obstacle
-      if (
-        event.pointerType === 'touch' &&
-        performance.now() - obstacleActivationTime < 500
-      ) {
-        return;
-      }
+  if (!obstacleMode || !obstacleMesh) return;
+  const obstacleBtn = document.getElementById('obstacle-btn');
+  if (obstacleJustActivated) return;
+  // Prevent mobile touch from instantly placing obstacle
+  if (
+    event.pointerType === 'touch' &&
+    performance.now() - obstacleActivationTime < 500
+  ) {
+    return;
+  }
 
-      // If obstacle button is clicked again while placement mode is active,
-      // pointerdown can fire on the button itself. Ignore UI clicks.
-      const clickedButton = event.target.closest('#obstacle-btn');
-      const clickedLayerPanel = event.target.closest('#layer-panel');
-      const clickedLayerBtn = event.target.closest('#layer-toggle-btn');
-      const clickedZoomBtn = event.target.closest('#zoom-cycle-btn');
+  // If obstacle button is clicked again while placement mode is active,
+  // pointerdown can fire on the button itself. Ignore UI clicks.
+  const clickedButton = event.target.closest('#obstacle-btn');
+  const clickedLayerPanel = event.target.closest('#layer-panel');
+  const clickedLayerBtn = event.target.closest('#layer-toggle-btn');
+  const clickedZoomBtn = event.target.closest('#zoom-cycle-btn');
 
-      if (clickedButton || clickedLayerPanel || clickedLayerBtn || clickedZoomBtn) {
-        return;
-      }
+  if (clickedButton || clickedLayerPanel || clickedLayerBtn || clickedZoomBtn) {
+    return;
+  }
 
-      obstacleMode = false;
-      controls.enabled = true;
-      obstacleJustActivated = false;
+  // Finalize obstacle position exactly where user tapped/clicked
+  updateObstaclePosition(
+    event.clientX,
+    event.clientY
+  );
+
+  obstacleMode = false;
+  controls.enabled = true;
+  obstacleJustActivated = false;
 
       const enteredHeight = prompt(
         'Enter obstacle height in meters:',
@@ -1105,10 +1166,17 @@ window.addEventListener('pointerdown', (event) => {
     });
 
     function showObstacleAnalysis() {
+      obstacleLabelMinimized = false;
+
+      let restoreBtn = document.getElementById('restore-analysis-btn');
+      if (restoreBtn) {
+        restoreBtn.style.display = 'none';
+      }
       const x = obstacleMesh.position.x;
       const z = obstacleMesh.position.z;
 
       const obstacleTopHeight = obstacleHeightMeters;
+      let obstacleCleared = true;
 
       // Remove previous label if exists
       if (obstacleLabel) {
@@ -1537,9 +1605,47 @@ window.addEventListener('pointerdown', (event) => {
   </div>
 </div>
 
-      <button id="closeObstacleAnalysis" style="background:rgba(255,77,77,0.15); border:1px solid rgba(255,77,77,0.35); color:#ff8080; width:28px; height:28px; border-radius:6px; cursor:pointer; font-size:16px; font-weight:bold; line-height:1;">
-        ×
-      </button>
+      <div style="display:flex; align-items:center; gap:6px;">
+
+  <button id="minimizeObstacleAnalysis"
+    style="
+      background:rgba(0,212,255,0.12);
+      border:1px solid rgba(0,212,255,0.3);
+      color:#7fdfff;
+      width:28px;
+      height:28px;
+      border-radius:6px;
+      cursor:pointer;
+      font-size:15px;
+      font-weight:bold;
+      line-height:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    ">
+    −
+  </button>
+
+  <button id="closeObstacleAnalysis"
+    style="
+      background:rgba(255,77,77,0.15);
+      border:1px solid rgba(255,77,77,0.35);
+      color:#ff8080;
+      width:28px;
+      height:28px;
+      border-radius:6px;
+      cursor:pointer;
+      font-size:16px;
+      font-weight:bold;
+      line-height:1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    ">
+    ×
+  </button>
+
+</div>
     </div>
   `;
 
@@ -1567,6 +1673,9 @@ window.addEventListener('pointerdown', (event) => {
         let minHeight = Math.min(...surfaceResults.map(s => s.height));
 
         const penetratesSurface = obstacleTopHeight > minHeight;
+        obstacleCleared =
+          !penetratesSurface &&
+          !insideRunway;
         const penetrationAmount = obstacleTopHeight - minHeight;
 
         // --- Get all equally restrictive surfaces ---
@@ -1651,8 +1760,8 @@ window.addEventListener('pointerdown', (event) => {
 
           <div style="font-size:14px; font-weight:700; line-height:1.5; color:#ffffff;">
             ${penetratesSurface
-  ? `Obstacle penetrates <span style="color:#ffb0b0;">${restrictiveNames}</span> by <span style="color:#ff8080;">${penetrationAmount.toFixed(1)} m</span>`
-  : `Obstacle remains below <span style="color:#9fe0ff;">${restrictiveNames}</span> by <span style="color:#7dffb3;">${(minHeight - obstacleTopHeight).toFixed(1)} m</span>`}
+            ? `Obstacle penetrates <span style="color:#ffb0b0;">${restrictiveNames}</span> by <span style="color:#ff8080;">${penetrationAmount.toFixed(1)} m</span>`
+            : `Obstacle remains below <span style="color:#9fe0ff;">${restrictiveNames}</span> by <span style="color:#7dffb3;">${(minHeight - obstacleTopHeight).toFixed(1)} m</span>`}
           </div>
         </div>
       </div>
@@ -1678,6 +1787,7 @@ window.addEventListener('pointerdown', (event) => {
         }
 
         if (insideRunway) {
+          obstacleCleared = false;
           remarks.push(`
         <div>
           <b>Runway Restriction:</b> Obstacle lies on Runway. No obstruction is permitted on Runway.
@@ -1758,85 +1868,85 @@ window.addEventListener('pointerdown', (event) => {
 
                 if (obstacleHeightMeters > minHeight) {
 
-  const originalHeight =
-    obj.userData.originalHeight;
+                  const originalHeight =
+                    obj.userData.originalHeight;
 
-  const originalMinY =
-    obj.userData.originalMinY;
+                  const originalMinY =
+                    obj.userData.originalMinY;
 
-  const penetrationRatio =
-    Math.min(
-      1,
-      Math.max(
-        0,
-        minHeight / obstacleHeightMeters
-      )
-    );
+                  const penetrationRatio =
+                    Math.min(
+                      1,
+                      Math.max(
+                        0,
+                        minHeight / obstacleHeightMeters
+                      )
+                    );
 
-  obj.material.vertexColors = true;
+                  obj.material.vertexColors = true;
 
-  const pos =
-    obj.geometry.attributes.position;
+                  const pos =
+                    obj.geometry.attributes.position;
 
-  const colors = [];
+                  const colors = [];
 
-  for (let i = 0; i < pos.count; i++) {
+                  for (let i = 0; i < pos.count; i++) {
 
-    const y = pos.getY(i);
+                    const y = pos.getY(i);
 
-    const normalized =
-      (y - originalMinY) /
-      originalHeight;
+                    const normalized =
+                      (y - originalMinY) /
+                      originalHeight;
 
-    if (normalized <= penetrationRatio) {
+                    if (normalized <= penetrationRatio) {
 
-      // BELOW LIMIT = GREEN
-      colors.push(
-        0.1, 1.0, 0.25
-      );
+                      // BELOW LIMIT = GREEN
+                      colors.push(
+                        0.1, 1.0, 0.25
+                      );
 
-    } else {
+                    } else {
 
-      // ABOVE LIMIT = RED
-      colors.push(
-        1.0, 0.15, 0.15
-      );
-    }
-  }
+                      // ABOVE LIMIT = RED
+                      colors.push(
+                        1.0, 0.15, 0.15
+                      );
+                    }
+                  }
 
-  obj.geometry.setAttribute(
-    'color',
-    new THREE.Float32BufferAttribute(
-      colors,
-      3
-    )
-  );
+                  obj.geometry.setAttribute(
+                    'color',
+                    new THREE.Float32BufferAttribute(
+                      colors,
+                      3
+                    )
+                  );
 
-  obj.material.color =
-    new THREE.Color(0xffffff);
+                  obj.material.color =
+                    new THREE.Color(0xffffff);
 
-  obj.material.emissive =
-    new THREE.Color(0x220000);
+                  obj.material.emissive =
+                    new THREE.Color(0x220000);
 
-  obj.material.emissiveIntensity = 0.55;
+                  obj.material.emissiveIntensity = 0.55;
 
-  obj.material.needsUpdate = true;
+                  obj.material.needsUpdate = true;
 
-} else {
+                } else {
 
-  // Entire obstacle GREEN if compliant
-  obj.material.vertexColors = false;
+                  // Entire obstacle GREEN if compliant
+                  obj.material.vertexColors = false;
 
-  obj.material.color =
-    new THREE.Color(0x34ff6a);
+                  obj.material.color =
+                    new THREE.Color(0x34ff6a);
 
-  obj.material.emissive =
-    new THREE.Color(0x103010);
+                  obj.material.emissive =
+                    new THREE.Color(0x103010);
 
-  obj.material.emissiveIntensity = 0.35;
+                  obj.material.emissiveIntensity = 0.35;
 
-  obj.material.needsUpdate = true;
-}
+                  obj.material.needsUpdate = true;
+                }
               }
             }
           }
@@ -1857,9 +1967,155 @@ window.addEventListener('pointerdown', (event) => {
         }
       }
 
+      // Remove previous status callout
+      if (obstacleStatusCallout) {
+        obstacleStatusCallout.remove();
+        obstacleStatusCallout = null;
+      }
+
+      // Create floating obstacle status callout (glassmorphism, glow, leader line)
+      const statusCallout =
+        document.createElement('div');
+
+      statusCallout.style.position = 'absolute';
+      statusCallout.style.left = '50%';
+      statusCallout.style.top = '0px';
+      statusCallout.style.transform =
+        'translateX(-50%)';
+
+      statusCallout.style.display = 'flex';
+      statusCallout.style.flexDirection = 'column';
+      statusCallout.style.alignItems = 'center';
+      statusCallout.style.pointerEvents = 'auto';
+      statusCallout.style.cursor = 'pointer';
+      statusCallout.style.zIndex = '1200';
+      // Prevent text selection
+
+      statusCallout.style.userSelect = 'none';
+
+      statusCallout.style.webkitUserSelect = 'none';
+
+      statusCallout.style.msUserSelect = 'none';
+
+      statusCallout.style.webkitTapHighlightColor = 'transparent';
+
+      // Main badge
+      const badge = document.createElement('div');
+
+      badge.style.padding = '7px 16px';
+      badge.style.borderRadius = '18px';
+      badge.style.fontSize = '12px';
+      badge.style.fontWeight = '800';
+      badge.style.letterSpacing = '0.7px';
+      badge.style.whiteSpace = 'nowrap';
+      badge.style.backdropFilter = 'blur(10px)';
+      badge.style.webkitBackdropFilter = 'blur(10px)';
+      badge.style.border = obstacleCleared
+        ? '1px solid rgba(0,255,160,0.45)'
+        : '1px solid rgba(255,80,80,0.45)';
+
+      badge.style.background = obstacleCleared
+        ? 'linear-gradient(180deg, rgba(0,210,140,0.26), rgba(0,110,80,0.18))'
+        : 'linear-gradient(180deg, rgba(255,80,80,0.26), rgba(150,20,20,0.18))';
+
+      badge.style.color = obstacleCleared
+        ? '#9fffc7'
+        : '#ffb0b0';
+
+      badge.style.boxShadow = obstacleCleared
+        ? '0 6px 18px rgba(0,255,160,0.18), 0 2px 10px rgba(0,0,0,0.45)'
+        : '0 6px 18px rgba(255,80,80,0.18), 0 2px 10px rgba(0,0,0,0.45)';
+
+      badge.style.textShadow = '0 1px 3px rgba(0,0,0,0.45)';
+
+      badge.innerHTML = obstacleCleared
+        ? '✔'
+        : '✖';
+
+
+
+      statusCallout.appendChild(badge);
+
+      // Store reference only
+      if (obstacleMesh) {
+
+        obstacleMesh.userData.statusCallout =
+          statusCallout;
+
+      }
+
+      obstacleStatusCallout =
+        statusCallout;
       label.innerHTML = html;
+      // Add floating status callout to DOM
+      statusCallout.style.position = 'fixed';
+
+      document.body.appendChild(statusCallout);
+
+      // Toggle analysis panel when callout clicked
+      statusCallout.addEventListener('click', () => {
+
+        if (!obstacleLabel) return;
+
+        const restoreBtn =
+          document.getElementById(
+            'restore-analysis-btn'
+          );
+
+        // Currently minimized → restore
+        if (obstacleLabel.style.display === 'none') {
+
+          obstacleLabel.style.display = 'block';
+          obstacleLabelMinimized = false;
+
+          if (restoreBtn) {
+            restoreBtn.style.display = 'none';
+          }
+
+        } else {
+
+          // Currently visible → minimize
+          obstacleLabel.style.display = 'none';
+          obstacleLabelMinimized = true;
+
+          if (restoreBtn) {
+            restoreBtn.style.display = 'flex';
+          }
+        }
+      });
       document.body.appendChild(label);
       obstacleLabel = label;
+      // Default minimized state
+      label.style.display = 'none';
+
+      obstacleLabelMinimized = true;
+
+      restoreBtn =
+        document.getElementById(
+          'restore-analysis-btn'
+        );
+
+      if (restoreBtn) {
+        restoreBtn.style.display = 'flex';
+      }
+
+      const minimizeBtn = document.getElementById('minimizeObstacleAnalysis');
+
+      if (minimizeBtn) {
+        minimizeBtn.addEventListener('click', () => {
+
+          if (!obstacleLabel) return;
+
+          obstacleLabel.style.display = 'none';
+          obstacleLabelMinimized = true;
+
+          restoreBtn = document.getElementById('restore-analysis-btn');
+
+          if (restoreBtn) {
+            restoreBtn.style.display = 'flex';
+          }
+        });
+      }
 
       const closeBtn = document.getElementById('closeObstacleAnalysis');
 
@@ -1870,11 +2126,17 @@ window.addEventListener('pointerdown', (event) => {
             obstacleLabel.remove();
             obstacleLabel = null;
           }
+          if (obstacleStatusCallout) {
+            obstacleStatusCallout.remove();
+            obstacleStatusCallout = null;
+          }
 
           if (obstacleMesh) {
             scene.remove(obstacleMesh);
             obstacleMesh = null;
           }
+
+          obstacleLabelMinimized = false;
 
           obstacleMode = false;
           controls.enabled = true;
@@ -1884,9 +2146,25 @@ window.addEventListener('pointerdown', (event) => {
             obstacleBtn.classList.remove('active');
             obstacleBtn.classList.remove('pressed');
           }
+          restoreBtn = document.getElementById('restore-analysis-btn');
+          if (restoreBtn) {
+            restoreBtn.style.display = 'none';
+          }
         });
       }
     }
+
+    // --- Restore Obstacle Analysis Button Handler ---
+    window.restoreObstacleAnalysis = () => {
+      if (!obstacleLabel) return;
+      obstacleLabel.style.display = 'block';
+      obstacleLabelMinimized = false;
+      const restoreBtn =
+        document.getElementById('restore-analysis-btn');
+      if (restoreBtn) {
+        restoreBtn.style.display = 'none';
+      }
+    };
 
     const compassArrow = document.getElementById('north-arrow');
     const northMarker = document.getElementById('north-marker');
@@ -2246,9 +2524,9 @@ window.addEventListener('pointerdown', (event) => {
 
       const mesh = new THREE.Mesh(geo, mat);
 
-mesh.userData.isGroundFootprint = true;
-mesh.userData.groundColor = color;
-mesh.userData.surfaceKey = surfaceKey;
+      mesh.userData.isGroundFootprint = true;
+      mesh.userData.groundColor = color;
+      mesh.userData.surfaceKey = surfaceKey;
 
       mesh.rotation.x = -Math.PI / 2;
       mesh.position.y = 0.12;
@@ -2452,19 +2730,19 @@ mesh.userData.surfaceKey = surfaceKey;
       }
 
       const takeoffGroundPts =
-  pts.map(p => ({ x: p.x, y: p.z }));
+        pts.map(p => ({ x: p.x, y: p.z }));
 
-const takeoffKey =
-  side === 1 ? 'TO27' : 'TO09';
+      const takeoffKey =
+        side === 1 ? 'TO27' : 'TO09';
 
-const takeoffGround =
-  createGroundFootprint(
-    takeoffGroundPts,
-    0xff1493,
-    takeoffKey
-  );
+      const takeoffGround =
+        createGroundFootprint(
+          takeoffGroundPts,
+          0xff1493,
+          takeoffKey
+        );
 
-olsGroup.add(takeoffGround);
+      olsGroup.add(takeoffGround);
       const geo = new THREE.BufferGeometry().setFromPoints(pts);
       if (pts.length === 6) geo.setIndex([0, 1, 5, 1, 2, 5, 2, 4, 5, 2, 3, 4]);
       else geo.setIndex([0, 1, 2, 0, 2, 3]);
@@ -2498,19 +2776,19 @@ olsGroup.add(takeoffGround);
         new THREE.Vector3(x2, h2, -w2 / 2), new THREE.Vector3(x1, h1, -w1 / 2)
       ];
       const approachGroundPts =
-  pts.map(p => ({ x: p.x, y: p.z }));
+        pts.map(p => ({ x: p.x, y: p.z }));
 
-const approachKey =
-  side === 1 ? 'APPR27' : 'APPR09';
+      const approachKey =
+        side === 1 ? 'APPR27' : 'APPR09';
 
-const approachGround =
-  createGroundFootprint(
-    approachGroundPts,
-    0x00ff00,
-    approachKey
-  );
+      const approachGround =
+        createGroundFootprint(
+          approachGroundPts,
+          0x00ff00,
+          approachKey
+        );
 
-olsGroup.add(approachGround);
+      olsGroup.add(approachGround);
       const geo = new THREE.BufferGeometry().setFromPoints(pts);
       geo.setIndex([0, 1, 7, 1, 2, 7, 2, 6, 7, 2, 3, 6, 3, 5, 6, 3, 4, 5]); geo.computeVertexNormals();
       const mesh = new THREE.Mesh(geo, new THREE.MeshPhongMaterial({ color: 0x32cd32, transparent: true, opacity: cfg.opacity, side: THREE.DoubleSide }));
@@ -3394,78 +3672,78 @@ olsGroup.add(approachGround);
       updateOFZGroupState('09');
       updateOFZGroupState('27');
       // --- Sync ground footprints with visibility ---
-olsGroup.traverse(obj => {
+      olsGroup.traverse(obj => {
 
-  if (!obj.userData?.isGroundFootprint) return;
+        if (!obj.userData?.isGroundFootprint) return;
 
-  const c = obj.userData.groundColor;
+        const c = obj.userData.groundColor;
 
-  // IHS
-  if (c === 0x00ffff) {
+        // IHS
+        if (c === 0x00ffff) {
 
-    obj.visible =
-      getV('chkIHS');
+          obj.visible =
+            getV('chkIHS');
 
-  }
+        }
 
-  // OHS
-  else if (c === 0x9933ff) {
+        // OHS
+        else if (c === 0x9933ff) {
 
-    obj.visible =
-      getV('chkOHS');
+          obj.visible =
+            getV('chkOHS');
 
-  }
+        }
 
-  // Transitional
-  else if (c === 0x0077ff) {
+        // Transitional
+        else if (c === 0x0077ff) {
 
-    obj.visible =
-      getV('chkTrans09') ||
-      getV('chkTrans27');
+          obj.visible =
+            getV('chkTrans09') ||
+            getV('chkTrans27');
 
-  }
+        }
 
-  // Takeoff
-  // Takeoff
-else if (c === 0xff1493) {
+        // Takeoff
+        // Takeoff
+        else if (c === 0xff1493) {
 
-  if (obj.userData.surfaceKey === 'TO09') {
+          if (obj.userData.surfaceKey === 'TO09') {
 
-    obj.visible =
-      getV('chkTakeOff1');
+            obj.visible =
+              getV('chkTakeOff1');
 
-  }
+          }
 
-  else if (obj.userData.surfaceKey === 'TO27') {
+          else if (obj.userData.surfaceKey === 'TO27') {
 
-    obj.visible =
-      getV('chkTakeOff2');
+            obj.visible =
+              getV('chkTakeOff2');
 
-  }
+          }
 
-}
+        }
 
-  // Approach
-  // Approach
-else if (c === 0x00ff00) {
+        // Approach
+        // Approach
+        else if (c === 0x00ff00) {
 
-  if (obj.userData.surfaceKey === 'APPR09') {
+          if (obj.userData.surfaceKey === 'APPR09') {
 
-    obj.visible =
-      getV('chkAppr1');
+            obj.visible =
+              getV('chkAppr1');
 
-  }
+          }
 
-  else if (obj.userData.surfaceKey === 'APPR27') {
+          else if (obj.userData.surfaceKey === 'APPR27') {
 
-    obj.visible =
-      getV('chkAppr2');
+            obj.visible =
+              getV('chkAppr2');
 
-  }
+          }
 
-}
+        }
 
-});
+      });
     };
 
     function updateRunwayGroupState(rwy) {
@@ -3595,6 +3873,40 @@ else if (c === 0x00ff00) {
     function animate() {
       requestAnimationFrame(animate);
       if (controls.enabled) controls.update();
+      // Update floating obstacle callout position
+      if (
+        obstacleMesh &&
+        obstacleMesh.userData.statusCallout
+      ) {
+
+        const callout =
+          obstacleMesh.userData.statusCallout;
+
+        const worldPos = new THREE.Vector3();
+
+        obstacleMesh.getWorldPosition(worldPos);
+
+        // raise above obstacle
+        worldPos.y +=
+          obstacleHeightMeters *
+          currentVScale +
+          5;
+
+        const screenPos =
+          worldPos.project(camera);
+
+        const x =
+          (screenPos.x * 0.5 + 0.5) *
+          window.innerWidth;
+
+        const y =
+          (-screenPos.y * 0.5 + 0.5) *
+          window.innerHeight;
+
+        callout.style.left = `${x}px`;
+        callout.style.top =
+          `${y - callout.offsetHeight - 6}px`;
+      }
       if (compassArrow && controls) {
         const angle = controls.getAzimuthalAngle();
         //compassArrow.style.transform = `rotate(${-angle}rad)`;
@@ -3683,3 +3995,16 @@ else if (c === 0x00ff00) {
 </body>
 
 </html>
+window.restoreObstacleAnalysis = () => {
+
+if (!obstacleLabel) return;
+
+obstacleLabel.style.display = 'block';
+obstacleLabelMinimized = false;
+
+const restoreBtn = document.getElementById('restore-analysis-btn');
+
+if (restoreBtn) {
+restoreBtn.style.display = 'none';
+}
+};
