@@ -1176,6 +1176,52 @@ window.addEventListener('pointerdown', (event) => {
       const z = obstacleMesh.position.z;
 
       const obstacleTopHeight = obstacleHeightMeters;
+
+      // --- Threshold/Bearing Information ---
+      const threshold09 = {
+        x: -CONFIG.runway.length / 2,
+        z: 0
+      };
+
+      const threshold27 = {
+        x: CONFIG.runway.length / 2,
+        z: 0
+      };
+
+      function getBearingAndDistance(from, to) {
+        const dx = to.x - from.x;
+        const dz = to.z - from.z;
+
+        const distance = Math.sqrt(dx * dx + dz * dz);
+
+        // Aviation style bearing
+        let bearing =
+          (Math.atan2(dx, -dz) * 180 / Math.PI + 360) % 360;
+
+        return {
+          bearing,
+          distance
+        };
+      }
+
+      const info09 = getBearingAndDistance(
+        threshold09,
+        { x, z }
+      );
+
+      const info27 = getBearingAndDistance(
+        threshold27,
+        { x, z }
+      );
+
+      const centerlineOffset = Math.abs(z);
+
+      function formatDistance(distance) {
+        if (distance >= 1000) {
+          return `${(distance / 1000).toFixed(3)} km`;
+        }
+        return `${distance.toFixed(1)} m`;
+      }
       let obstacleCleared = true;
 
       // Remove previous label if exists
@@ -1500,72 +1546,152 @@ window.addEventListener('pointerdown', (event) => {
 
       // --- Inner Transitional Surface RWY 09 ---
       {
-        const iaStartX = rHalf + CONFIG.innerApproach.distFromThreshold;
-        const iaEndX = iaStartX + CONFIG.innerApproach.length;
+        // RWY 09 approach side is NEGATIVE X
+        const iaStartX = -(rHalf + CONFIG.innerApproach.distFromThreshold);
+        const iaEndX = iaStartX - CONFIG.innerApproach.length;
 
-        const blsStartX = rHalf - CONFIG.balkedLanding.distFromThreshold;
-        const blsEndX = blsStartX - CONFIG.balkedLanding.length;
+        // RWY 09 BLS extends toward POSITIVE X from negative threshold
+        const blsStartX = -(rHalf - CONFIG.balkedLanding.distFromThreshold);
+        const blsEndX = blsStartX + CONFIG.balkedLanding.length;
 
         const getInnerEdge = (xVal) => {
-          if (xVal <= blsStartX) {
-            const dist = Math.max(0, blsStartX - xVal);
-            return (CONFIG.balkedLanding.innerEdge / 2) + (dist * CONFIG.balkedLanding.divergence);
+
+          // Inside BLS region
+          if (xVal >= blsStartX) {
+
+            const dist = Math.max(0, xVal - blsStartX);
+
+            return (
+              (CONFIG.balkedLanding.innerEdge / 2) +
+              (dist * CONFIG.balkedLanding.divergence)
+            );
           }
 
+          // Inner approach region
           return CONFIG.innerApproach.innerEdge / 2;
         };
 
-        if (x >= blsEndX && x <= iaEndX) {
+        // --- Helper: get base height of IAS/BLS at xVal ---
+        const getBaseHeight = (xVal) => {
+          // Along Balked Landing region
+          if (xVal >= blsStartX) {
+            const dist = Math.max(0, xVal - blsStartX);
+            return Math.min(
+              dist * CONFIG.balkedLanding.slope,
+              CONFIG.ihs.height
+            );
+          }
+          // Along Inner Approach region
+          const iaDist = Math.max(0, iaStartX - xVal);
+          return Math.min(
+            iaDist * CONFIG.innerApproach.slope,
+            CONFIG.ihs.height
+          );
+        };
+
+        if (x <= blsEndX && x >= iaEndX) {
+
           const innerEdge = getInnerEdge(x);
-          const outerEdge = innerEdge + (CONFIG.innerTransitional.maxHeight / 0.3333);
+
+          const outerEdge =
+            innerEdge +
+            (CONFIG.innerTransitional.maxHeight / 0.3333);
 
           if (
             Math.abs(z) >= innerEdge &&
             Math.abs(z) <= outerEdge
           ) {
+
+            const baseHeight = getBaseHeight(x);
+
             const permittedHeight = Math.min(
-              (Math.abs(z) - innerEdge) * 0.3333,
-              CONFIG.innerTransitional.maxHeight
+              baseHeight +
+              ((Math.abs(z) - innerEdge) * 0.3333),
+              CONFIG.ihs.height
             );
 
             obstacleInOFZ = true;
-            addSurfaceResult('Inner Transitional RWY 09', permittedHeight);
+
+            addSurfaceResult(
+              'Inner Transitional RWY 09',
+              permittedHeight
+            );
           }
         }
       }
 
       // --- Inner Transitional Surface RWY 27 ---
       {
-        const iaStartX = -(rHalf + CONFIG.innerApproach.distFromThreshold);
-        const iaEndX = iaStartX - CONFIG.innerApproach.length;
+        // RWY 27 approach side is POSITIVE X
+        const iaStartX = rHalf + CONFIG.innerApproach.distFromThreshold;
+        const iaEndX = iaStartX + CONFIG.innerApproach.length;
 
-        const blsStartX = -(rHalf - CONFIG.balkedLanding.distFromThreshold);
-        const blsEndX = blsStartX + CONFIG.balkedLanding.length;
+        // RWY 27 BLS extends toward NEGATIVE X from positive threshold
+        const blsStartX = rHalf - CONFIG.balkedLanding.distFromThreshold;
+        const blsEndX = blsStartX - CONFIG.balkedLanding.length;
 
         const getInnerEdge = (xVal) => {
-          if (xVal >= blsStartX) {
-            const dist = Math.max(0, xVal - blsStartX);
-            return (CONFIG.balkedLanding.innerEdge / 2) + (dist * CONFIG.balkedLanding.divergence);
+
+          // Inside BLS region
+          if (xVal <= blsStartX) {
+
+            const dist = Math.max(0, blsStartX - xVal);
+
+            return (
+              (CONFIG.balkedLanding.innerEdge / 2) +
+              (dist * CONFIG.balkedLanding.divergence)
+            );
           }
 
+          // Inner approach region
           return CONFIG.innerApproach.innerEdge / 2;
         };
 
-        if (x <= blsEndX && x >= iaEndX) {
+        // --- Helper: get base height of IAS/BLS at xVal ---
+        const getBaseHeight = (xVal) => {
+          // Along Balked Landing region
+          if (xVal <= blsStartX) {
+            const dist = Math.max(0, blsStartX - xVal);
+            return Math.min(
+              dist * CONFIG.balkedLanding.slope,
+              CONFIG.ihs.height
+            );
+          }
+          // Along Inner Approach region
+          const iaDist = Math.max(0, xVal - iaStartX);
+          return Math.min(
+            iaDist * CONFIG.innerApproach.slope,
+            CONFIG.ihs.height
+          );
+        };
+
+        if (x >= blsEndX && x <= iaEndX) {
+
           const innerEdge = getInnerEdge(x);
-          const outerEdge = innerEdge + (CONFIG.innerTransitional.maxHeight / 0.3333);
+
+          const outerEdge =
+            innerEdge +
+            (CONFIG.innerTransitional.maxHeight / 0.3333);
 
           if (
             Math.abs(z) >= innerEdge &&
             Math.abs(z) <= outerEdge
           ) {
+
+            const baseHeight = getBaseHeight(x);
+
             const permittedHeight = Math.min(
-              (Math.abs(z) - innerEdge) * 0.3333,
-              CONFIG.innerTransitional.maxHeight
+              baseHeight +
+              ((Math.abs(z) - innerEdge) * 0.3333),
+              CONFIG.ihs.height
             );
 
             obstacleInOFZ = true;
-            addSurfaceResult('Inner Transitional RWY 27', permittedHeight);
+
+            addSurfaceResult(
+              'Inner Transitional RWY 27',
+              permittedHeight
+            );
           }
         }
       }
@@ -1687,6 +1813,59 @@ window.addEventListener('pointerdown', (event) => {
           .map(s => s.name)
           .join(' & ');
 
+        // --- BOX: Obstacle Position Information ---
+        html += `
+  <div style="
+    padding:12px;
+    border-radius:10px;
+    background:rgba(0,212,255,0.08);
+    border:1px solid rgba(0,212,255,0.20);
+    margin-bottom:12px;
+  ">
+
+    <div style="
+      font-size:11px;
+      color:#7fdfff;
+      margin-bottom:10px;
+      letter-spacing:0.5px;
+      text-transform:uppercase;
+      font-weight:700;
+    ">
+      Obstacle Position Information
+    </div>
+
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:12px;">
+      <div style="color:#9fdfff;">
+        RWY 09 Threshold
+      </div>
+
+      <div style="text-align:right; color:#ffffff; font-weight:700;">
+        ${info09.bearing.toFixed(1)}° / ${formatDistance(info09.distance)}
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-size:12px;">
+      <div style="color:#9fdfff;">
+        RWY 27 Threshold
+      </div>
+
+      <div style="text-align:right; color:#ffffff; font-weight:700;">
+        ${info27.bearing.toFixed(1)}° / ${formatDistance(info27.distance)}
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:space-between; padding-top:8px; border-top:1px solid rgba(255,255,255,0.08); font-size:12px;">
+      <div style="color:#9fdfff;">
+        Runway Centreline Offset
+      </div>
+
+      <div style="text-align:right; color:#ffd27d; font-weight:700;">
+        ${formatDistance(centerlineOffset)}
+      </div>
+    </div>
+
+  </div>
+`;
         // --- BOX 1 : Applicable Surfaces ---
         html += `
       <div style="padding:12px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); margin-bottom:12px;">
